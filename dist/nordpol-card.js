@@ -1,7 +1,7 @@
 /* Nordpol Card – a Christmas dashboard for Home Assistant (countdown, elf cams, nice list, elf of the day, sleigh tracker).
    https://github.com/DKAnord/nordpol-card · MIT License · self-contained, no external assets. */
 (() => {
-const VER = "2.1.0";
+const VER = "2.2.0";
 const REPO_URL = "https://github.com/DKAnord/nordpol-card"; // TODO: set before publishing
 /* === Camera periods (override in card config: periods / file_dir). Each period starts at "from" (local time). === */
 const CAM_PERIODS = [
@@ -822,6 +822,7 @@ class NordpolSleigh extends HTMLElement {
 
 /* ---------- TABLET BOARD (panel view) ---------- */
 class NordpolBoard extends HTMLElement {
+  static getConfigElement(){ return document.createElement("nordpol-board-card-editor"); }
   static getStubConfig(){ return {default_tab:"sleigh",cams:{cams:[{label:"CAM 01 – REINDEER PADDOCK"},{label:"CAM 02 – TOY WORKSHOP"},{label:"CAM 03 – MAILROOM"},{label:"CAM 04 – BAKERY"}]},sleigh:{eta:"23:59"},nice:{store:"todo.nordpol_nice_list"},elf:{}}; }
   setConfig(c){ this._c=c||{}; this._build(); this._checkVersion(); }
   set hass(h){ this._hass=h; (this._kids||[]).forEach(k=>k.hass=h); }
@@ -883,6 +884,73 @@ class NordpolBoard extends HTMLElement {
     clearTimeout(this._back); if(user && k!==(this._c.default_tab||"sleigh")) this._back=setTimeout(()=>this._show(this._c.default_tab||"sleigh"),(this._c.return_after_min||3)*60000); }
   disconnectedCallback(){ clearTimeout(this._back); }
 }
+
+/* ---------- VISUAL CONFIG EDITOR (nordpol-board-card) ---------- */
+class NordpolBoardEditor extends HTMLElement {
+  setConfig(c){ this._c=Object.assign({},c||{}); this._render(); }
+  set hass(h){ const first=!this._hass; this._hass=h; if(first) this._render(); }
+  _emit(next){ this._c=next; this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:next},bubbles:true,composed:true})); }
+  _render(){
+    const r=this.shadowRoot||this.attachShadow({mode:"open"}); const c=this._c||{};
+    const todos=this._hass?Object.keys(this._hass.states).filter(k=>k.startsWith("todo.")).sort():[];
+    const niceStore=(c.nice&&c.nice.store)||""; const camOv=(c.cams&&c.cams.overlay); const ovVal=camOv===false?"false":camOv===true?"true":"minimal";
+    const snowOn=!c.hero||c.hero.snow!==false; const hb=(c.home_button&&c.home_button.path)||"";
+    const da=langOf(c)==="da";
+    r.innerHTML=`<style>
+      .ed{display:grid;gap:12px;font-family:var(--paper-font-body1_-_font-family,system-ui,sans-serif);color:var(--primary-text-color,#222)}
+      .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+      label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600}
+      input,select{box-sizing:border-box;width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--divider-color,#ccc);
+        background:var(--card-background-color,#fff);color:var(--primary-text-color,#222);font-size:14px}
+      .chk{flex-direction:row;align-items:center;gap:8px;font-weight:600;cursor:pointer}
+      .chk input{width:auto}
+      .note{font-size:12px;opacity:.7;margin-top:-4px}
+    </style><div class="ed">
+      <div class="row">
+        <label>${da?"Sprog":"Language"}
+          <select id="lang"><option value="">Auto</option><option value="en" ${c.language==="en"?"selected":""}>English</option><option value="da" ${c.language==="da"?"selected":""}>Dansk</option></select>
+        </label>
+        <label>${da?"Startfane":"Default tab"}
+          <select id="tab"><option value="sleigh" ${(c.default_tab||"sleigh")==="sleigh"?"selected":""}>🛷 Sleigh</option><option value="nice" ${c.default_tab==="nice"?"selected":""}>⭐ Nice list</option><option value="elf" ${c.default_tab==="elf"?"selected":""}>🧝 Elf</option></select>
+        </label>
+      </div>
+      <div class="row">
+        <label>${da?"Festdato (MM-DD)":"Celebration date (MM-DD)"}
+          <input id="date" placeholder="12-24" value="${esc(c.date||"12-24")}">
+        </label>
+        <label>${da?"Kane-ankomst (HH:MM)":"Sleigh ETA (HH:MM)"}
+          <input id="eta" placeholder="23:59" value="${esc((c.sleigh&&c.sleigh.eta)||"23:59")}">
+        </label>
+      </div>
+      <label>${da?"Artig-liste (Local To-do entitet)":"Nice list (Local To-do entity)"}
+        ${todos.length?`<select id="store"><option value="">— ${da?"Vælg to-do liste":"Select to-do list"} —</option>${todos.map(id=>`<option value="${esc(id)}" ${niceStore===id?"selected":""}>${esc(id)}</option>`).join("")}</select>`:
+        `<input id="store" placeholder="todo.nordpol_nice_list" value="${esc(niceStore)}">`}
+      </label>
+      <div class="row">
+        <label>${da?"Kamera-overlay":"Camera overlay"}
+          <select id="ov"><option value="minimal" ${ovVal==="minimal"?"selected":""}>Minimal (REC + clock + label)</option><option value="true" ${ovVal==="true"?"selected":""}>CCTV (scanlines + vignette)</option><option value="false" ${ovVal==="false"?"selected":""}>Off (video only)</option></select>
+        </label>
+        <label>${da?"Hjem-knap sti (valgfri)":"Home button path (optional)"}
+          <input id="hb" placeholder="/lovelace/0" value="${esc(hb)}">
+        </label>
+      </div>
+      <label class="chk"><input type="checkbox" id="snow" ${snowOn?"checked":""}> ${da?"Snevejr i toppen":"Falling snow in hero"}</label>
+      <div class="note">${da?"Tip: Avancerede felter (kameraer, tekster, ekstra stop) bevares i YAML.":"Tip: Advanced options (custom cams, strings, extra sleigh stops) are preserved in YAML."}</div>
+    </div>`;
+    const $=id=>r.getElementById(id);
+    const upd=fn=>{ const n=JSON.parse(JSON.stringify(this._c||{})); fn(n); this._emit(n); };
+    $("lang").addEventListener("change",e=>upd(n=>{ if(e.target.value) n.language=e.target.value; else delete n.language; }));
+    $("tab").addEventListener("change",e=>upd(n=>{ n.default_tab=e.target.value; }));
+    $("date").addEventListener("change",e=>upd(n=>{ const v=e.target.value.trim(); if(v&&v!=="12-24") n.date=v; else delete n.date; }));
+    $("eta").addEventListener("change",e=>upd(n=>{ n.sleigh=Object.assign({},n.sleigh,{eta:e.target.value.trim()||"23:59"}); }));
+    $("store").addEventListener("change",e=>upd(n=>{ const v=e.target.value.trim(); if(v) n.nice=Object.assign({},n.nice,{store:v}); else if(n.nice) delete n.nice.store; }));
+    $("ov").addEventListener("change",e=>upd(n=>{ const v=e.target.value; n.cams=Object.assign({},n.cams,{overlay:v==="false"?false:v==="true"?true:"minimal"}); }));
+    $("hb").addEventListener("change",e=>upd(n=>{ const v=e.target.value.trim(); if(v) n.home_button=Object.assign({label:"Home",icon:"🏠"},n.home_button,{path:v}); else delete n.home_button; }));
+    $("snow").addEventListener("change",e=>upd(n=>{ n.hero=Object.assign({},n.hero,{snow:e.target.checked}); }));
+  }
+}
+if(!customElements.get("nordpol-board-card-editor")) customElements.define("nordpol-board-card-editor", NordpolBoardEditor);
+
 const defs=[["nordpol-board-card",NordpolBoard,"Nordpol: tablet board"],["nordpol-hero-card",NordpolHero,"Nordpol: countdown"],["nordpol-cam-card",NordpolCams,"Nordpol: elf cams"],
  ["nordpol-nice-card",NordpolNice,"Nordpol: nice list"],["nordpol-elf-card",NordpolElf,"Nordpol: elf of the day"],["nordpol-sleigh-card",NordpolSleigh,"Nordpol: sleigh tracker"]];
 window.customCards=window.customCards||[];
