@@ -1,0 +1,12 @@
+# Videos & generated media are large – distribute via GitHub Releases, not git history
+*.mp4
+*.webm
+*.mov
+media/
+# Local secrets / HA backups must never be committed
+secrets.yaml
+*.bak*
+.storage/
+
+__pycache__/
+*.pyc

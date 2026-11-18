@@ -1,0 +1,71 @@
+# Optional helpers for the Nice-list tab. Save as <config>/packages/nordpol.yaml
+# (needs `homeassistant: packages: !include_dir_named packages` in configuration.yaml)
+#
+# ALSO REQUIRED (UI only, can't be YAML): Settings → Devices & services → Add integration →
+# "Local To-do" → name it "Nordpol nice list"  →  entity todo.nordpol_nice_list
+input_text:
+  nordpol_elf_log:
+    name: Nordpol elf log
+    max: 255
+    initial: ""
+
+script:
+  nordpol_give_points:
+    alias: "Nordpol: give/remove nice points"
+    description: Adds or subtracts points (0–100) for one child and writes a line in the elf log.
+    icon: mdi:star-plus
+    mode: queued
+    max: 10
+    fields:
+      child: { name: Child, required: true, selector: { text: {} } }
+      points: { name: Points, required: true, default: 5, selector: { number: { min: -25, max: 25, step: 1, mode: box } } }
+      reason: { name: Reason, required: false, selector: { text: {} } }
+    sequence:
+      - action: todo.get_items
+        target: { entity_id: todo.nordpol_nice_list }
+        data: { status: needs_action }
+        response_variable: list
+      - variables:
+          it: "{{ list['todo.nordpol_nice_list']['items'] | selectattr('summary','eq',child) | first | default(none) }}"
+      - condition: template
+        value_template: "{{ it is not none }}"
+      - variables:
+          d: "{{ (it.description if it.description else '{}') | from_json }}"
+          new: "{{ [0, [100, (d.score | default(d.start | default(75)) | int(75)) + (points | int(0))] | min] | max }}"
+          line: "{{ child }} {{ '+' if (points | int(0)) > 0 else '' }}{{ points | int(0) }}{{ (': ' ~ reason) if reason is defined and reason else '' }}"
+          old: "{{ states('input_text.nordpol_elf_log') if states('input_text.nordpol_elf_log') not in ['unknown','unavailable',''] else '' }}"
+      - action: todo.update_item
+        target: { entity_id: todo.nordpol_nice_list }
+        data:
+          item: "{{ it.uid }}"
+          description: " {{ dict(d, score=new | int) | to_json }}"
+      - action: input_text.set_value
+        target: { entity_id: input_text.nordpol_elf_log }
+        data:
+          value: "{{ (line ~ ((' • ' ~ old) if old else ''))[:255] }}"
+
+  nordpol_reset_nice_list:
+    alias: "Nordpol: reset nice list"
+    description: Resets every child to their own start score (or `start`) and clears the elf log.
+    icon: mdi:restart
+    mode: single
+    fields:
+      start: { name: Start value (optional), required: false, selector: { number: { min: 0, max: 100, step: 5 } } }
+    sequence:
+      - action: todo.get_items
+        target: { entity_id: todo.nordpol_nice_list }
+        data: { status: needs_action }
+        response_variable: list
+      - repeat:
+          for_each: "{{ list['todo.nordpol_nice_list']['items'] | rejectattr('summary','eq','📜 log') | list }}"
+          sequence:
+            - variables:
+                d: "{{ (repeat.item.description if repeat.item.description else '{}') | from_json }}"
+            - action: todo.update_item
+              target: { entity_id: todo.nordpol_nice_list }
+              data:
+                item: "{{ repeat.item.uid }}"
+                description: " {{ dict(d, score=((start if start is defined and start not in [none,''] else d.start | default(75)) | int(75))) | to_json }}"
+      - action: input_text.set_value
+        target: { entity_id: input_text.nordpol_elf_log }
+        data: { value: "Fresh start – the elves are watching! 👀" }

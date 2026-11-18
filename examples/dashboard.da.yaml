@@ -1,0 +1,21 @@
+# Dansk eksempel – samme kort, sproget sat til dansk
+views:
+  - title: Nordpolen
+    path: nordpolen
+    icon: mdi:pine-tree
+    type: panel
+    cards:
+      - type: custom:nordpol-board-card
+        language: da
+        cams:
+          file_dir: /local/nordpol
+          cams:
+            - label: "CAM 01 – RENSDYRSTALD"
+            - label: "CAM 02 – LEGETØJSVÆRKSTED"
+            - label: "CAM 03 – POSTRUM"
+            - label: "CAM 04 – BAGERI"
+        sleigh: { eta: "23:59" }
+        nice:
+          store: todo.nordpol_artig_listen
+          log_entity: input_text.nordpol_nisselog
+        elf: {}

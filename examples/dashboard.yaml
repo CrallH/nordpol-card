@@ -1,0 +1,41 @@
+# Paste into: Dashboard → ⋮ → Raw configuration editor (or a panel view's card list)
+views:
+  - title: Christmas
+    path: christmas
+    icon: mdi:pine-tree
+    type: panel
+    background: radial-gradient(ellipse at 50% -10%, #1f3b78 0%, #0b1a3a 45%, #050b1f 100%) fixed
+    cards:
+      - type: custom:nordpol-board-card
+        language: en                 # en | da  (or override any text with `strings:`)
+        default_tab: sleigh          # sleigh | nice | elf
+        # date: "12-25"               # celebration day MM-DD (default 12-24); then also set sleigh.eta and hero.until
+        return_after_min: 3
+        hero:
+          title: "🎅 North Pole"
+          subtitle: "Santa's secret control room"
+          snow: true
+        cams:
+          title: "📹 North Pole cams"
+          file_dir: /local/nordpol   # = <config>/www/nordpol/
+          overlay: minimal           # minimal = REC + clock + label | true = + scanlines/vignette | false
+          # cctv_style: color        # only with overlay: true  (color | mono)
+          date_format: "DD-MM-YYYY HH:mm:ss"   # e.g. "MM/DD/YYYY HH:mm:ss"
+          cams:                      # file names: cam1_morning.mp4, cam1_day.mp4, cam1_evening.mp4, cam2_…
+            - label: "CAM 01 – REINDEER PADDOCK"
+            - label: "CAM 02 – TOY WORKSHOP"
+            - label: "CAM 03 – MAILROOM"
+            - label: "CAM 04 – BAKERY"
+          # periods:                 # optional – change names/times; file name = cam<N>_<name>.mp4
+          #   - { name: morning, from: "05:00" }
+          #   - { name: day,     from: "08:00" }
+          #   - { name: evening, from: "17:00" }
+        sleigh:
+          eta: "23:59"               # local time Santa reaches you on Dec 24
+          # home: { name: Springfield, lat: 39.78, lon: -89.65, tz: America/Chicago }  # default: your HA location
+        nice:
+          store: todo.nordpol_nice_list           # Local To-do integration (see README)
+          log_entity: input_text.nordpol_elf_log  # optional – from helpers/nordpol_package.yaml
+          default_start: 75
+        elf: {}                      # 30 built-in elves; or elf: { elves: [{name: Elf Joe, joke: "Question? Answer", task: "Do something kind"}] }
+        # home_button: { label: Home, icon: "🏠", path: /lovelace/0 }   # optional extra tab button
