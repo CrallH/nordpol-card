@@ -40,11 +40,15 @@ elf: {}
 sleigh: { eta: "23:59" }
 ```
 
-### 3. Optional extras (Nice list & Cam videos)
-* **Nice list:** Just create a **Local To-do** list (e.g. `Nordpol nice list`) — the card **auto-detects** it automatically (or set `nice.store` if you have multiple to-do lists):  
-  [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=local_todo)  
-  *(Optionally add [`helpers/nordpol_package.yaml`](helpers/nordpol_package.yaml) if you want to award points from HA automations.)*
-* **Cam videos:** **Included automatically!** All 12 clips stream out of the box with zero setup. *(Optional offline copy: unzip the two packs from [Release v2.1.0](https://github.com/DKAnord/nordpol-card/releases/tag/v2.1.0) into `<config>/www/nordpol/` or run:)*
+### 3. Enable the Nice list (1 click)
+Create a **Local To-do** list (e.g. `Nordpol nice list`) — the card **auto-detects** it automatically, and all 12 North Pole cam videos + your HA location/time zone work out of the box:
+
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=local_todo)
+
+<details>
+<summary>Advanced / Offline options (local videos, HA automations, custom location)</summary>
+
+* **Offline / custom cam videos:** All 12 clips stream automatically, so you don't need to download anything. If you want local/offline copies in `<config>/www/nordpol/`, run this in the HA **Terminal & SSH** add-on (or download from [Release v2.1.0](https://github.com/DKAnord/nordpol-card/releases/tag/v2.1.0)):
   ```bash
   mkdir -p /config/www/nordpol && cd /config/www/nordpol && \
   curl -LO https://github.com/DKAnord/nordpol-card/releases/download/v2.1.0/nordpol-videos-cam1-2.zip && \
@@ -52,7 +56,10 @@ sleigh: { eta: "23:59" }
   unzip -o nordpol-videos-cam1-2.zip && unzip -o nordpol-videos-cam3-4.zip && rm -f nordpol-videos-cam*.zip
   ```
   See [docs/VIDEOS.md](docs/VIDEOS.md) for customising periods or generating your own clips.
+* **Automations:** Add [`helpers/nordpol_package.yaml`](helpers/nordpol_package.yaml) if you want to award nice points from HA scripts/automations.
 * **Sleigh home:** Defaults to your Home Assistant location and time zone. Override with `sleigh.home`.
+
+</details>
 
 ## Individual cards
 `nordpol-board-card` (everything, tabbed) · `nordpol-hero-card` · `nordpol-cam-card` · `nordpol-sleigh-card` ·
