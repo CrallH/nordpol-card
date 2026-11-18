@@ -41,10 +41,10 @@ sleigh: { eta: "23:59" }
 ```
 
 ### 3. Optional extras (Nice list & Cam videos)
-* **Nice list:** Create a **Local To-do** list (e.g. `todo.nordpol_nice_list`) and set `nice.store`:  
+* **Nice list:** Just create a **Local To-do** list (e.g. `Nordpol nice list`) — the card **auto-detects** it automatically (or set `nice.store` if you have multiple to-do lists):  
   [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=local_todo)  
   *(Optionally add [`helpers/nordpol_package.yaml`](helpers/nordpol_package.yaml) if you want to award points from HA automations.)*
-* **Cam videos (12 looping clips):** Download both zip files from [Release v2.1.0](https://github.com/DKAnord/nordpol-card/releases/tag/v2.1.0) into `<config>/www/nordpol/`, or run this one-liner in the HA **Terminal & SSH** add-on:
+* **Cam videos:** **Included automatically!** All 12 clips stream out of the box with zero setup. *(Optional offline copy: unzip the two packs from [Release v2.1.0](https://github.com/DKAnord/nordpol-card/releases/tag/v2.1.0) into `<config>/www/nordpol/` or run:)*
   ```bash
   mkdir -p /config/www/nordpol && cd /config/www/nordpol && \
   curl -LO https://github.com/DKAnord/nordpol-card/releases/download/v2.1.0/nordpol-videos-cam1-2.zip && \

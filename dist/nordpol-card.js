@@ -1,7 +1,7 @@
 /* Nordpol Card – a Christmas dashboard for Home Assistant (countdown, elf cams, nice list, elf of the day, sleigh tracker).
    https://github.com/DKAnord/nordpol-card · MIT License · self-contained, no external assets. */
 (() => {
-const VER = "2.2.0";
+const VER = "2.3.0";
 const REPO_URL = "https://github.com/DKAnord/nordpol-card"; // TODO: set before publishing
 /* === Camera periods (override in card config: periods / file_dir). Each period starts at "from" (local time). === */
 const CAM_PERIODS = [
@@ -9,7 +9,8 @@ const CAM_PERIODS = [
   { name: "day",     from: "08:00" },
   { name: "evening", from: "17:00" },
 ];
-const CAM_FILE_DIR = "/local/nordpol";        // files: cam1_morning.mp4 … cam4_evening.mp4
+const CAM_FILE_DIR = "/local/nordpol";
+const CAM_REMOTE_DIR = "https://github.com/DKAnord/nordpol-card/releases/download/media";        // files: cam1_morning.mp4 … cam4_evening.mp4
 const CAM_RECHECK_MIN = 10;                    // re-check for new/removed files every 10 min
 const FONT_X = `"Mountains of Christmas","Apple Chancery","Brush Script MT","Segoe Script","Snell Roundhand",cursive`;
 const BASE_CSS = `
@@ -380,12 +381,19 @@ class NordpolCams extends HTMLElement {
   async _update(force){ if(!this._vids) return; const per=this._period();
     if(!force && per===this._per && Date.now()-(this._lastProbe||0) < CAM_RECHECK_MIN*60000) return;
     this._per=per; this._lastProbe=Date.now();
-    /* order: this cam's file for the period → same cam's other periods → embedded clip → "signal lost" */
+    /* order: local file for the period → same cam's other periods → explicit src → hosted release clip (remote!==false) → "signal lost" */
     const order=[per,...this._periods().map(p=>p.name).filter(n=>n!==per)];
     await Promise.all(this._vids.map(async (v,i)=>{
       if(this._c.prefer_files!==false) for(const n of order){ const url=this._fileUrl(i,n);
         if(await this._probe(url)){ this._setSrc(i,url,"file",url); return; } }
-      const fb=this._fallback(i); if(fb) this._setSrc(i,fb,"embed"); else this._setNone(i); }));
+      const fb=this._fallback(i); if(fb){ this._setSrc(i,fb,"embed"); return; }
+      if(this._c.remote!==false && !this._c.cams[i]?.file){
+        const rdir=(this._c.remote_dir||CAM_REMOTE_DIR).replace(/\/$/,"");
+        const rurl=`${rdir}/cam${i+1}_${per}.mp4`;
+        const cached=this._exists[rurl];
+        if(!cached || cached.ok || Date.now()-cached.t >= CAM_RECHECK_MIN*60000){ this._setSrc(i,rurl,"file",rurl); return; }
+      }
+      this._setNone(i); }));
     const pl=this.shadowRoot.querySelector(".per"); if(pl) pl.textContent=(this._c.period_labels||this._t.periods)[per]||per; }
   _noise(){
     if (document.hidden) return;
@@ -450,6 +458,13 @@ class NordpolNice extends HTMLElement {
   static getStubConfig(){ return {store:"todo.nordpol_nice_list"}; }
   setConfig(c){ this._c=Object.assign({store:null, log_entity:null, default_start:75, log_lines:4}, c||{}); this._t=T(this._c);
     this._parent=false; this._built=false; this._edit=false; if(this._hass) this._render(); }
+  _store(){
+    if(this._c.store) return this._c.store;
+    if(this._autoStore) return this._autoStore;
+    const ks=this._hass?Object.keys(this._hass.states).filter(k=>k.startsWith("todo.")).sort():[];
+    const match=ks.find(k=>/nordpol|nice|artig|santa|jule/i.test(k))||(ks.length===1?ks[0]:null);
+    return (this._autoStore=match||null);
+  }
   set hass(h){ const old=this._hass; this._hass=h; this._sub();
     if(!old) this._render(); else if(this._c.log_entity && old.states[this._c.log_entity]!==h.states[this._c.log_entity]) this._renderLog(); }
   getCardSize(){ return 5; }
@@ -459,26 +474,28 @@ class NordpolNice extends HTMLElement {
   /* Load order: live subscription (todo/item/subscribe) → one-shot todo/item/list → todo.get_items service.
      None of these need admin. If nothing arrives within 6 s we fall back, and any final failure is shown in the card. */
   async _sub(){
-    if(this._subbed || !this._hass || !this._c.store || !this.isConnected || Date.now()<(this._nextTry||0)) return;
-    if(!this._hass.states[this._c.store]){ if(!this._err){ this._fail(F(this._t.load_err,{store:this._c.store, err:this._t.no_entity})); } return; }
+    const st=this._store();
+    if(this._subbed || !this._hass || !st || !this.isConnected || Date.now()<(this._nextTry||0)) return;
+    if(!this._hass.states[st]){ if(!this._err){ this._fail(F(this._t.load_err,{store:st, err:this._t.no_entity})); } return; }
     this._subbed=true;
     const gen=this._gen=(this._gen||0)+1; const live=()=>gen===this._gen && this.isConnected;
     clearTimeout(this._lt); this._lt=setTimeout(()=>{ if(live() && !this._items) this._fallback(gen); }, 6000);
     try{
       const u = await this._hass.connection.subscribeMessage(m=>{ if(gen!==this._gen) return; this._gotItems(m&&m.items); },
-        {type:"todo/item/subscribe", entity_id:this._c.store});
+        {type:"todo/item/subscribe", entity_id:st});
       if(!live()){ try{u()}catch(e){} return; } this._unsub=u;
     }catch(e){ if(live()) this._fallback(gen, e); }
   }
   async _fallback(gen, firstErr){
     if(this._fbBusy) return; this._fbBusy=true; let err=firstErr;
-    try{ const r=await this._hass.callWS({type:"todo/item/list", entity_id:this._c.store}); if(gen===this._gen){ this._gotItems(r&&r.items); } this._fbBusy=false; return; }
+    try{ const st=this._store(); if(!st){this._fbBusy=false;return;}
+    const r=await this._hass.callWS({type:"todo/item/list", entity_id:st}); if(gen===this._gen){ this._gotItems(r&&r.items); } this._fbBusy=false; return; }
     catch(e){ err=e; }
-    try{ const r=await this._hass.callService("todo","get_items",{},{entity_id:this._c.store},false,true);
-      const resp=(r&&r.response)||{}; const it=(resp[this._c.store]||{}).items; if(Array.isArray(it)){ if(gen===this._gen) this._gotItems(it); this._fbBusy=false; return; } }
+    try{ const r=await this._hass.callService("todo","get_items",{},{entity_id:st},false,true);
+      const resp=(r&&r.response)||{}; const it=(resp[st]||{}).items; if(Array.isArray(it)){ if(gen===this._gen) this._gotItems(it); this._fbBusy=false; return; } }
     catch(e){ err=e; }
     this._fbBusy=false; if(gen!==this._gen) return; this._subbed=false; this._nextTry=Date.now()+30000;
-    if(!this._items) this._fail(F(this._t.load_err,{store:this._c.store, err:String((err&&(err.message||err.code))||err||"timeout")}));
+    if(!this._items) this._fail(F(this._t.load_err,{store:st, err:String((err&&(err.message||err.code))||err||"timeout")}));
   }
   _gotItems(items){ clearTimeout(this._lt); this._nextTry=0; this._items=Array.isArray(items)?items:[]; this._err=null; this._render(); }
   _fail(msg){ clearTimeout(this._lt); this._err=msg; this._render(); }
@@ -486,7 +503,7 @@ class NordpolNice extends HTMLElement {
     this._subbed=false; this._fbBusy=false; this._nextTry=0; this._items=null; this._err=null; this._render(); this._sub(); }
   _kids(){ return (this._items||[]).filter(i=>i && i.status!=="completed" && i.summary && i.summary!==LOG_ITEM).map(i=>{ let d={}; try{ d=JSON.parse(i.description||"{}")||{}; if(typeof d!=="object") d={}; }catch(e){}
     const start=clamp100(d.start!=null?d.start:this._c.default_start); return {uid:i.uid, name:i.summary, emoji:d.emoji||"🧒", start, score:clamp100(d.score!=null?d.score:start), d}; }); }
-  _svc(s,data){ const p=this._hass.callService("todo", s, data, {entity_id:this._c.store});
+  _svc(s,data){ const p=this._hass.callService("todo", s, data, {entity_id:this._store()});
     // Without a live subscription (fallback mode) re-read the list after every change so the card stays current.
     p.then(()=>{ if(!this._unsub){ this._subbed=false; this._nextTry=0; const g=this._gen=(this._gen||0)+1; this._subbed=true; this._fallback(g); } }).catch(()=>{});
     return p; }
@@ -579,7 +596,7 @@ class NordpolNice extends HTMLElement {
       this._built=true;
     }
     const kidsEl=r.getElementById("kids"), bd=r.getElementById("bd"), errEl=r.getElementById("err");
-    if(!this._c.store){ kidsEl.innerHTML=`<div class="empty">${t.no_store}</div>`; bd.classList.remove("showadd"); errEl.classList.remove("on"); this._renderLog(); return; }
+    if(!this._store()){ kidsEl.innerHTML=`<div class="empty">${t.no_store}</div>`; bd.classList.remove("showadd"); errEl.classList.remove("on"); this._renderLog(); return; }
     errEl.classList.toggle("on", !!this._err); errEl.innerHTML = this._err ? `⚠ ${esc(this._err)}<button>${t.retry}</button>` : "";
     const kids=this._kids();
     // The add button is always reachable when there is nothing to show (empty list, still loading too long, or an error).
@@ -823,7 +840,7 @@ class NordpolSleigh extends HTMLElement {
 /* ---------- TABLET BOARD (panel view) ---------- */
 class NordpolBoard extends HTMLElement {
   static getConfigElement(){ return document.createElement("nordpol-board-card-editor"); }
-  static getStubConfig(){ return {default_tab:"sleigh",cams:{cams:[{label:"CAM 01 – REINDEER PADDOCK"},{label:"CAM 02 – TOY WORKSHOP"},{label:"CAM 03 – MAILROOM"},{label:"CAM 04 – BAKERY"}]},sleigh:{eta:"23:59"},nice:{store:"todo.nordpol_nice_list"},elf:{}}; }
+  static getStubConfig(){ return {default_tab:"sleigh",cams:{cams:[{label:"CAM 01 – REINDEER PADDOCK"},{label:"CAM 02 – TOY WORKSHOP"},{label:"CAM 03 – MAILROOM"},{label:"CAM 04 – BAKERY"}]},sleigh:{eta:"23:59"},nice:{},elf:{}}; }
   setConfig(c){ this._c=c||{}; this._build(); this._checkVersion(); }
   set hass(h){ this._hass=h; (this._kids||[]).forEach(k=>k.hass=h); }
   /* If the dashboard config asks for a newer card (min_version) than the JS this browser has loaded, reload once so a
