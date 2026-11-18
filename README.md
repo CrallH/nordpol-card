@@ -17,31 +17,42 @@ A self-contained Christmas dashboard for Home Assistant – plug it into any das
 |---|---|---|
 | ![Sleigh](docs/screenshot-sleigh.png) | ![Nice list](docs/screenshot-nice.png) | ![Elf](docs/screenshot-elf.png) |
 
-## Install
+## Quick Start (3 steps)
 
-### HACS (custom repository)
-1. HACS → ⋮ → **Custom repositories** → add `https://github.com/DKAnord/nordpol-card`, type **Dashboard**.
-2. Install **Nordpol Card**, reload the browser.
+### 1. Install the card
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=DKAnord&repository=nordpol-card&category=plugin)
 
-### Manual
-Copy `dist/nordpol-card.js` to `<config>/www/` and add a resource: Settings → Dashboards → ⋮ → Resources →
-`/local/nordpol-card.js` (JavaScript module).
+<details>
+<summary>Or install via HACS manually / without HACS</summary>
 
-## Minimal setup
+* **HACS:** HACS → ⋮ → **Custom repositories** → add `https://github.com/DKAnord/nordpol-card`, type **Dashboard** → install **Nordpol Card** and reload the browser.
+* **Manual:** Copy `dist/nordpol-card.js` to `<config>/www/` and add a resource under *Settings → Dashboards → ⋮ → Resources* (`/local/nordpol-card.js`, JavaScript module).
+
+</details>
+
+### 2. Add a Panel view & paste the dashboard
+Create a new dashboard view with **View type: Panel** (so the tablet layout fills the screen), open **Raw configuration editor**, and paste [`examples/dashboard.yaml`](examples/dashboard.yaml) (English) or [`examples/dashboard.da.yaml`](examples/dashboard.da.yaml) (Danish):
+
 ```yaml
-type: custom:nordpol-board-card   # use a *panel* view for the full tablet layout
-language: en
+type: custom:nordpol-board-card   # best inside a Panel view
+language: en                      # en | da
 elf: {}
 sleigh: { eta: "23:59" }
 ```
-Full example: [`examples/dashboard.yaml`](examples/dashboard.yaml) · Danish: [`examples/dashboard.da.yaml`](examples/dashboard.da.yaml)
 
-## Optional pieces
-| Feature | What you need |
-|---|---|
-| Nice list | Add the **Local To-do** integration (e.g. `todo.nordpol_nice_list`) and set `nice.store`. Optionally add [`helpers/nordpol_package.yaml`](helpers/nordpol_package.yaml) for the elf log and automation scripts. |
-| Cam videos | Put clips in `<config>/www/nordpol/` – see [docs/VIDEOS.md](docs/VIDEOS.md). |
-| Sleigh home | Defaults to your HA location/time zone. Override with `sleigh.home`. |
+### 3. Optional extras (Nice list & Cam videos)
+* **Nice list:** Create a **Local To-do** list (e.g. `todo.nordpol_nice_list`) and set `nice.store`:  
+  [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=local_todo)  
+  *(Optionally add [`helpers/nordpol_package.yaml`](helpers/nordpol_package.yaml) if you want to award points from HA automations.)*
+* **Cam videos (12 looping clips):** Download both zip files from [Release v2.1.0](https://github.com/DKAnord/nordpol-card/releases/tag/v2.1.0) into `<config>/www/nordpol/`, or run this one-liner in the HA **Terminal & SSH** add-on:
+  ```bash
+  mkdir -p /config/www/nordpol && cd /config/www/nordpol && \
+  curl -LO https://github.com/DKAnord/nordpol-card/releases/download/v2.1.0/nordpol-videos-cam1-2.zip && \
+  curl -LO https://github.com/DKAnord/nordpol-card/releases/download/v2.1.0/nordpol-videos-cam3-4.zip && \
+  unzip -o nordpol-videos-cam1-2.zip && unzip -o nordpol-videos-cam3-4.zip && rm -f nordpol-videos-cam*.zip
+  ```
+  See [docs/VIDEOS.md](docs/VIDEOS.md) for customising periods or generating your own clips.
+* **Sleigh home:** Defaults to your Home Assistant location and time zone. Override with `sleigh.home`.
 
 ## Individual cards
 `nordpol-board-card` (everything, tabbed) · `nordpol-hero-card` · `nordpol-cam-card` · `nordpol-sleigh-card` ·
