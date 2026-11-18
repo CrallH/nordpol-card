@@ -11,14 +11,11 @@ A self-contained Christmas dashboard for Home Assistant – plug it into any das
 
 ![Nordpol Card demo](docs/demo.gif)
 
-<details>
-<summary>Screenshots (Sleigh tracker · Nice list · Elf of the day)</summary>
+### Screenshots
 
 | Sleigh tracker | Nice list | Elf of the day |
 |---|---|---|
 | ![Sleigh](docs/screenshot-sleigh.png) | ![Nice list](docs/screenshot-nice.png) | ![Elf](docs/screenshot-elf.png) |
-
-</details>
 
 ## Install
 

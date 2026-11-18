@@ -71,7 +71,7 @@ ffmpeg -i in.mp4 -an -vf "scale=1280:-2" -c:v libx264 -crf 28 -preset slow \
 
 1. Collect the 12 clips in `media/` (git-ignored).
 2. `cd media && zip nordpol-videos.zip cam*_*.mp4`
-3. Attach `nordpol-videos.zip` to a GitHub **Release** (not to git history – keeps clones small).
+3. Attach the video pack zip(s) (e.g. `nordpol-videos-cam1-2.zip` and `nordpol-videos-cam3-4.zip`) to a GitHub **Release** (not to git history – keeps clones small).
 4. Users unzip into `<config>/www/nordpol/`.
 
 > [!IMPORTANT]
