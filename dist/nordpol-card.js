@@ -1,7 +1,7 @@
 /* Nordpol Card – a Christmas dashboard for Home Assistant (countdown, elf cams, nice list, elf of the day, sleigh tracker).
    https://github.com/DKAnord/nordpol-card · MIT License · self-contained, no external assets. */
 (() => {
-const VER = "2.3.0";
+const VER = "2.3.1";
 const REPO_URL = "https://github.com/DKAnord/nordpol-card"; // TODO: set before publishing
 /* === Camera periods (override in card config: periods / file_dir). Each period starts at "from" (local time). === */
 const CAM_PERIODS = [
@@ -302,6 +302,7 @@ class NordpolCams extends HTMLElement {
     const r = this.shadowRoot || this.attachShadow({mode:"open"}); r.innerHTML="";
     css(r, BASE_CSS + `
     .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+    .grid.one{grid-template-columns:1fr}
     .tile{position:relative;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000;cursor:pointer;
        border:2px solid #1d2a1d;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 4px 14px rgba(0,0,0,.6)}
     .tile video,.tile canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:grayscale(1) contrast(1.15) brightness(.95)}
@@ -328,6 +329,7 @@ class NordpolCams extends HTMLElement {
     :host(.fill) .bd{flex:1;min-height:0;display:flex;flex-direction:column}
     :host(.fill) .wrap{flex:1;min-height:0;container-type:size;display:flex;align-items:center;justify-content:center}
     :host(.fill) .grid{--tw:min(calc((100cqw - 10px)/2),calc((100cqh - 10px)/2*16/9));grid-template-columns:repeat(2,var(--tw));gap:10px}
+    :host(.fill) .grid.one{--tw:min(100cqw,calc(100cqh*16/9));grid-template-columns:var(--tw)}
     :host(.fill) .tile{aspect-ratio:16/9;width:var(--tw)}
     :host(.fill) .ov{font-size:clamp(11px,1.15vw,15px)}
     :host(.fill) .hd{font-size:28px}
@@ -350,8 +352,9 @@ class NordpolCams extends HTMLElement {
       <div class="scan"></div><div class="ov"><div class="rec"><i class="dot"></i>REC</div><div class="clk"></div><div class="lab">${esc(c.label||("CAM "+(i+1)))}</div></div><i class="mini"></i></div>`).join("");
     const lost = `<div class="tile lostT"><canvas width="96" height="72" style="display:block"></canvas><div class="lost"><span>${L.cam_lost}</span><span class="rs">${L.cam_restore}</span></div>
       <div class="scan"></div><div class="ov"><div class="rec"><i class="dot"></i>REC</div><div class="clk"></div><div class="lab">${esc(this._c.lost_label)}</div></div></div>`;
+    const showLost = cams.length > 1 && cams.length % 2 === 1 && this._c.fill_lost !== false;
     const ov=this._ov(); r.innerHTML += `<ha-card class="np ${ov!==false?"cctv":""} ${ov==="minimal"?"min":"st-"+esc(this._c.cctv_style||"color")}"><div class="hd">${esc(this._c.title)}<small>${L.cam_live} · <span class="per"></span> · ${L.cam_tap}</small></div>
-      <div class="bd"><div class="wrap"><div class="grid">${tiles}${cams.length%2===1?lost:""}</div></div>
+      <div class="bd"><div class="wrap"><div class="grid${cams.length===1?" one":""}">${tiles}${showLost?lost:""}</div></div>
       <div class="foot">${esc(this._c.footer!=null?this._c.footer:L.cam_foot)}</div></div></ha-card>`;
     this._vids=[...r.querySelectorAll("video")];
     this._vids.forEach((v,i)=>{ v.muted=true; v.defaultMuted=true;
