@@ -17,25 +17,21 @@ views:
           snow: true
         cams:
           title: "📹 North Pole cams"
-          file_dir: /local/nordpol   # = <config>/www/nordpol/
+          # file_dir: /local/nordpol   # optional – streams hosted clips automatically if no local files exist
           overlay: minimal           # minimal = REC + clock + label | true = + scanlines/vignette | false
           # cctv_style: color        # only with overlay: true  (color | mono)
           date_format: "DD-MM-YYYY HH:mm:ss"   # e.g. "MM/DD/YYYY HH:mm:ss"
-          cams:                      # file names: cam1_morning.mp4, cam1_day.mp4, cam1_evening.mp4, cam2_…
+          cams:
             - label: "CAM 01 – REINDEER PADDOCK"
             - label: "CAM 02 – TOY WORKSHOP"
             - label: "CAM 03 – MAILROOM"
             - label: "CAM 04 – BAKERY"
-          # periods:                 # optional – change names/times; file name = cam<N>_<name>.mp4
-          #   - { name: morning, from: "05:00" }
-          #   - { name: day,     from: "08:00" }
-          #   - { name: evening, from: "17:00" }
         sleigh:
-          eta: "23:59"               # local time Santa reaches you on Dec 24
-          # home: { name: Springfield, lat: 39.78, lon: -89.65, tz: America/Chicago }  # default: your HA location
-        nice:
-          store: todo.nordpol_nice_list           # Local To-do integration (see README)
-          log_entity: input_text.nordpol_elf_log  # optional – from helpers/nordpol_package.yaml
-          default_start: 75
+          eta: "23:59"               # local time Santa reaches you (uses your HA location/time zone by default)
+          # home: { name: Springfield, lat: 39.78, lon: -89.65, tz: America/Chicago }
+        nice: {}                     # auto-detects your Local To-do list & stores the Elf Log inside it!
+          # store: todo.nordpol_nice_list           # only needed if you have multiple to-do lists
+          # log_entity: input_text.nordpol_elf_log  # optional – from helpers/nordpol_package.yaml
+          # default_start: 75
         elf: {}                      # 30 built-in elves; or elf: { elves: [{name: Elf Joe, joke: "Question? Answer", task: "Do something kind"}] }
         # home_button: { label: Home, icon: "🏠", path: /lovelace/0 }   # optional extra tab button
