@@ -1,8 +1,8 @@
 /* Nordpol Card – a Christmas dashboard for Home Assistant (countdown, elf cams, nice list, elf of the day, sleigh tracker).
    https://github.com/DKAnord/nordpol-card · MIT License · self-contained, no external assets. */
 (() => {
-const VER = "2.4.1";
-const REPO_URL = "https://github.com/DKAnord/nordpol-card"; // TODO: set before publishing
+const VER = "2.4.2";
+const REPO_URL = "https://github.com/DKAnord/nordpol-card";
 /* === Camera periods (override in card config: periods / file_dir). Each period starts at "from" (local time). === */
 const CAM_PERIODS = [
   { name: "morning", from: "05:00" },
@@ -379,6 +379,42 @@ function T(c){
   for(const k of Object.keys(c.strings)) if(k!=="__proto__"&&k!=="constructor"&&k!=="prototype") o[k]=escVal(c.strings[k]);
   return o;
 }
+function hasDefaultTodo(hass, entities){
+  const id="todo.nordpol_nice_list";
+  return (Array.isArray(entities)&&entities.includes(id)) || Boolean(hass&&hass.states&&hass.states[id]);
+}
+function assertObj(c){ if(!c || typeof c!=="object" || Array.isArray(c)) throw new Error("Invalid card configuration"); }
+const LANG_OPTS = [{value:"",label:"Auto"},{value:"en",label:"English"},{value:"da",label:"Dansk"},{value:"fr",label:"Français"},{value:"de",label:"Deutsch"},{value:"es",label:"Español"}];
+const OV_OPTS = [{value:"minimal",label:"Minimal (REC + clock + label)"},{value:"cctv",label:"CCTV (scanlines + vignette)"},{value:"off",label:"Off (video only)"}];
+const CCTV_OPTS = [{value:"color",label:"Color"},{value:"mono",label:"Monochrome"}];
+const ED_T = {
+ en: {lang:"Language",tab:"Default tab",date:"Celebration date (MM-DD)",target:"Countdown target (MM-DD HH:MM)",until:"Countdown heading",eta:"Sleigh ETA (HH:MM)",store:"Nice list (Local To-do entity)",sel:"Select to-do list",log:"Elf log entity (optional)",dstart:"Default starting score",llines:"Visible log lines",ov:"Camera overlay",cctv:"CCTV filter style",df:"Camera clock format",foot:"Camera footer text",gl:"Camera signal glitch effect",hb:"Home button path (optional)",snow:"Falling snow in hero",tz:"Time zone (optional)",title:"Card title",sub:"Subtitle",elf_ent:"Custom elf entity (optional)",tip:"Tip: Advanced options (custom cams, strings, extra sleigh stops) are preserved in YAML."},
+ da: {lang:"Sprog",tab:"Startfane",date:"Festdato (MM-DD)",target:"Nedtællingsmål (MM-DD TT:MM)",until:"Nedtællingstekst",eta:"Kane-ankomst (TT:MM)",store:"Artig-liste (Local To-do entitet)",sel:"Vælg to-do liste",log:"Nisse-log entitet (valgfri)",dstart:"Startpoint som standard",llines:"Synlige loglinjer",ov:"Kamera-overlay",cctv:"CCTV-filterstil",df:"Kamera-ur format",foot:"Kamera-bundtekst",gl:"Kamera signal-glitch effekt",hb:"Hjem-knap sti (valgfri)",snow:"Snevejr i toppen",tz:"Tidszone (valgfri)",title:"Korttitel",sub:"Undertitel",elf_ent:"Brugerdefineret nisse-entitet (valgfri)",tip:"Tip: Avancerede felter (kameraer, tekster, ekstra stop) bevares i YAML."},
+ fr: {lang:"Langue",tab:"Onglet par défaut",date:"Date de fête (MM-JJ)",target:"Cible du compte à rebours (MM-JJ HH:MM)",until:"Titre du compte à rebours",eta:"Arrivée du traîneau (HH:MM)",store:"Liste des enfants sages (entité To-do)",sel:"Choisir une liste",log:"Entité journal des lutins (optionnel)",dstart:"Score de départ par défaut",llines:"Lignes de journal visibles",ov:"Superposition caméra",cctv:"Style de filtre CCTV",df:"Format de l’horloge caméra",foot:"Texte pied de carte caméra",gl:"Effet de brouillage caméra",hb:"Chemin bouton Accueil (optionnel)",snow:"Neige qui tombe dans l’en-tête",tz:"Fuseau horaire (optionnel)",title:"Titre de la carte",sub:"Sous-titre",elf_ent:"Entité lutin personnalisée (optionnel)",tip:"Astuce : Les options avancées (caméras, textes, arrêts) sont conservées en YAML."},
+ de: {lang:"Sprache",tab:"Start-Tab",date:"Feiertag (MM-TT)",target:"Countdown-Ziel (MM-TT SS:MM)",until:"Countdown-Überschrift",eta:"Schlitten-Ankunft (SS:MM)",store:"Artig-Liste (Local-To-do-Entität)",sel:"To-do-Liste wählen",log:"Wichtel-Log-Entität (optional)",dstart:"Standard-Startpunktzahl",llines:"Sichtbare Log-Zeilen",ov:"Kamera-Overlay",cctv:"CCTV-Filterstil",df:"Kamera-Uhrformat",foot:"Kamera-Fußzeile",gl:"Kamera-Signalstörung (Glitch)",hb:"Home-Button-Pfad (optional)",snow:"Schneefall im Kopfbereich",tz:"Zeitzone (optional)",title:"Kartentitel",sub:"Untertitel",elf_ent:"Benutzerdefinierte Wichtel-Entität (optional)",tip:"Tipp: Erweiterte Optionen (Kameras, Texte, Extra-Stopps) bleiben in YAML erhalten."},
+ es: {lang:"Idioma",tab:"Pestaña inicial",date:"Fecha de celebración (MM-DD)",target:"Objetivo cuenta atrás (MM-DD HH:MM)",until:"Título cuenta atrás",eta:"Llegada del trineo (HH:MM)",store:"Lista de niños buenos (entidad To-do)",sel:"Seleccionar lista",log:"Entidad de registro élfico (opcional)",dstart:"Puntuación inicial por defecto",llines:"Líneas de registro visibles",ov:"Superposición de cámara",cctv:"Estilo de filtro CCTV",df:"Formato del reloj de cámara",foot:"Texto de pie de cámara",gl:"Efecto de interferencia en cámara",hb:"Ruta botón Inicio (opcional)",snow:"Nieve cayendo en la cabecera",tz:"Zona horaria (opcional)",title:"Título de la tarjeta",sub:"Subtítulo",elf_ent:"Entidad de duende personalizada (opcional)",tip:"Consejo: Las opciones avanzadas (cámaras, textos, paradas) se conservan en YAML."}
+};
+const ED_H = {
+ en: {date:"Default 12-24 (or e.g. 12-25, 01-07).",target:"MM-DD HH:MM or HH:MM (uses celebration date). Default 12-24 18:00 (fr/es 12-25 00:00).",eta:"Local 24-hour arrival time (default 23:59).",tz:"IANA zone, e.g. Europe/Copenhagen (defaults to Home Assistant time zone).",df:"Tokens: YYYY, MM, DD, HH, mm, ss.",hb:"Lovelace path, e.g. /lovelace/0 (adds a Home tab button).",store:"Stores children & scores; defaults to todo.nordpol_nice_list if present.",log:"Optional input_text entity; otherwise logs are saved inside the To-do list.",elf_ent:"State formatted as Name|Joke? Answer|Task."},
+ da: {date:"Standard 12-24 (eller f.eks. 12-25, 01-07).",target:"MM-DD TT:MM eller TT:MM (bruger festdato). Standard 12-24 18:00.",eta:"Lokal ankomsttid i 24-timers format (standard 23:59).",tz:"IANA-tidszone, f.eks. Europe/Copenhagen (bruger ellers HA’s tidszone).",df:"Koder: YYYY, MM, DD, HH, mm, ss.",hb:"Lovelace-sti, f.eks. /lovelace/0 (tilføjer en Hjem-fane).",store:"Gemmer børn og point; bruger todo.nordpol_nice_list hvis den findes.",log:"Valgfri input_text-entitet; ellers gemmes loggen i To-do listen.",elf_ent:"Tilstand i formatet Navn|Vits? Svar|Opgave."},
+ fr: {date:"Par défaut 12-24 (ou p. ex. 12-25, 01-07).",target:"MM-JJ HH:MM ou HH:MM (utilise la date de fête). Par défaut 12-25 00:00.",eta:"Heure locale d’arrivée sur 24 h (par défaut 23:59).",tz:"Fuseau IANA, p. ex. Europe/Paris (sinon celui de Home Assistant).",df:"Jetons : YYYY, MM, DD, HH, mm, ss.",hb:"Chemin Lovelace, p. ex. /lovelace/0 (ajoute un bouton Accueil).",store:"Stocke enfants et scores ; utilise todo.nordpol_nice_list si présente.",log:"Entité input_text optionnelle ; sinon le journal reste dans la liste To-do.",elf_ent:"État au format Nom|Blague ? Réponse|Mission."},
+ de: {date:"Standard 12-24 (oder z. B. 12-25, 01-07).",target:"MM-TT SS:MM oder SS:MM (nutzt Feiertag). Standard 12-24 18:00.",eta:"Lokale Ankunftszeit im 24h-Format (Standard 23:59).",tz:"IANA-Zeitzone, z. B. Europe/Berlin (sonst HA-Zeitzone).",df:"Platzhalter: YYYY, MM, DD, HH, mm, ss.",hb:"Lovelace-Pfad, z. B. /lovelace/0 (fügt einen Home-Button hinzu).",store:"Speichert Kinder & Punkte; nutzt todo.nordpol_nice_list falls vorhanden.",log:"Optionale input_text-Entität; sonst wird das Log in der To-do-Liste gespeichert.",elf_ent:"Zustand im Format Name|Witz? Antwort|Aufgabe."},
+ es: {date:"Por defecto 12-24 (o p. ej. 12-25, 01-07).",target:"MM-DD HH:MM o HH:MM (usa la fecha de celebración). Por defecto 12-25 00:00.",eta:"Hora local de llegada en formato 24 h (por defecto 23:59).",tz:"Zona IANA, p. ej. Europe/Madrid (si no, la de Home Assistant).",df:"Códigos: YYYY, MM, DD, HH, mm, ss.",hb:"Ruta de Lovelace, p. ej. /lovelace/0 (añade un botón de Inicio).",store:"Guarda niños y puntos; usa todo.nordpol_nice_list si existe.",log:"Entidad input_text opcional; si no, el registro se guarda en la lista To-do.",elf_ent:"Estado con formato Nombre|Chiste? Respuesta|Misión."}
+};
+const ED_KEY = {
+  language:"lang", default_tab:"tab", date:"date", target:"target", until:"until", eta:"eta",
+  store:"store", log_entity:"log", default_start:"dstart", log_lines:"llines",
+  overlay:"ov", cctv_style:"cctv", date_format:"df", footer:"foot", glitch:"gl",
+  home_button_path:"hb", snow:"snow", time_zone:"tz", title:"title", subtitle:"sub", entity:"elf_ent"
+};
+const ED_HKEY = {
+  date:"date", target:"target", eta:"eta", time_zone:"tz", date_format:"df",
+  home_button_path:"hb", store:"store", log_entity:"log", entity:"elf_ent"
+};
+const edOf = c => ED_T[langOf(c && typeof c==="object" ? c : null)] || ED_T.en;
+const edHOf = c => ED_H[langOf(c && typeof c==="object" ? c : null)] || ED_H.en;
+const mkLabel = cfg => (s, d) => { const k=ED_KEY[s&&s.name]; return (k && edOf(d && typeof d==="object" ? d : cfg)[k]) || (s&&s.name) || ""; };
+const mkHelper = cfg => (s, d) => { const k=ED_HKEY[s&&s.name]; return (k && edHOf(d && typeof d==="object" ? d : cfg)[k]) || ""; };
 function F(s,o){ return String(s).replace(/\{(\w+)\}/g,(_,k)=>o&&o[k]!=null?o[k]:""); }
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 
@@ -446,6 +482,29 @@ const Snow = { n:0, cv:null, raf:null, flakes:[],
 /* ---------- HERO / COUNTDOWN ---------- */
 class NordpolHero extends HTMLElement {
   static getStubConfig(){ return {snow:true}; }
+  static getConfigForm(){
+    return {
+      schema:[
+        {type:"grid", schema:[
+          {name:"language", selector:{select:{mode:"dropdown", options:LANG_OPTS}}},
+          {name:"date", selector:{text:{}}}
+        ]},
+        {type:"grid", schema:[
+          {name:"title", selector:{text:{}}},
+          {name:"subtitle", selector:{text:{}}}
+        ]},
+        {type:"grid", schema:[
+          {name:"target", selector:{text:{}}},
+          {name:"until", selector:{text:{}}}
+        ]},
+        {name:"time_zone", selector:{text:{}}},
+        {name:"snow", default:true, selector:{boolean:{}}}
+      ],
+      assertConfig(c){ assertObj(c); },
+      computeLabel: mkLabel(),
+      computeHelper: mkHelper()
+    };
+  }
   setConfig(c){ this._t=T(c); const tr=TRaw(c); this._c = Object.assign({title:tr.hero_title, subtitle:tr.hero_sub, snow:true}, c||{}); this._build(); }
   set hass(h){ const first=!this._hass; this._hass=h; if(first) this._tick(); }
   getCardSize(){ return 4; }
@@ -527,6 +586,29 @@ class NordpolHero extends HTMLElement {
 /* ---------- SURVEILLANCE CAM WALL ---------- */
 class NordpolCams extends HTMLElement {
   static getStubConfig(){ return {cams:[{label:"CAM 01 – REINDEER PADDOCK"},{label:"CAM 02 – TOY WORKSHOP"},{label:"CAM 03 – MAILROOM"},{label:"CAM 04 – BAKERY"}]}; }
+  static getConfigForm(){
+    return {
+      schema:[
+        {type:"grid", schema:[
+          {name:"language", selector:{select:{mode:"dropdown", options:LANG_OPTS}}},
+          {name:"title", selector:{text:{}}}
+        ]},
+        {type:"grid", schema:[
+          {name:"overlay", default:"minimal", selector:{select:{mode:"dropdown", options:OV_OPTS}}},
+          {name:"cctv_style", default:"color", selector:{select:{mode:"dropdown", options:CCTV_OPTS}}}
+        ]},
+        {type:"grid", schema:[
+          {name:"date_format", selector:{text:{}}},
+          {name:"time_zone", selector:{text:{}}}
+        ]},
+        {name:"footer", selector:{text:{}}},
+        {name:"glitch", default:true, selector:{boolean:{}}}
+      ],
+      assertConfig(c){ assertObj(c); if(c.cams!==undefined && !Array.isArray(c.cams)) throw new Error("cams must be a list"); },
+      computeLabel: mkLabel(),
+      computeHelper: mkHelper()
+    };
+  }
   setConfig(c){ this._t=T(c); this._tr=TRaw(c); this._c = Object.assign({title:this._tr.cam_title, cams:[], lost_label:this._tr.cam_lost_label, glitch:true}, c||{}); this._blob={}; this._build(); }
   set hass(h){ const first=!this._hass; this._hass=h; if(first){ this._clock(); this._update(true); } }
   getCardSize(){ return 6; }
@@ -598,8 +680,8 @@ class NordpolCams extends HTMLElement {
     r.querySelectorAll(".tile[data-i]").forEach(t=>t.addEventListener("click",()=>this._full(+t.dataset.i)));
     this._canv=[...r.querySelectorAll("canvas")];
   }
-  /* overlay: "minimal" (default: REC, clock, label only) | true (+ scanlines, vignette, muted colours) | false */
-  _ov(){ const o=this._c.overlay; return (o===undefined||o===null||o==="")?"minimal":o; }
+  /* overlay: "minimal" (default: REC, clock, label only) | true/"cctv" (+ scanlines, vignette, muted colours) | false/"off" */
+  _ov(){ const o=this._c.overlay; if(o===false||o==="false"||o==="off") return false; if(o===true||o==="true"||o==="cctv") return true; return "minimal"; }
   _now(){ return nowInTz(this._c.time_zone||(this._hass&&this._hass.config&&this._hass.config.time_zone)); }
   _periods(){ const P=(this._c.periods||CAM_PERIODS).map(p=>{const [h,m]=String(p.from).split(":").map(Number); return {name:p.name,min:h*60+(m||0)};}).sort((a,b)=>a.min-b.min); return P; }
   _period(now=this._now()){ const P=this._periods(); const m=now.getHours()*60+now.getMinutes(); let cur=P[P.length-1];
@@ -693,7 +775,26 @@ class NordpolCams extends HTMLElement {
 const LOG_ITEM = "📜 log";
 const clamp100 = v => Math.max(0, Math.min(100, Math.round(+v || 0)));
 class NordpolNice extends HTMLElement {
-  static getStubConfig(){ return {store:"todo.nordpol_nice_list"}; }
+  static getStubConfig(hass, entities){ return hasDefaultTodo(hass, entities) ? {store:"todo.nordpol_nice_list"} : {}; }
+  static getConfigForm(){
+    return {
+      schema:[
+        {type:"grid", schema:[
+          {name:"language", selector:{select:{mode:"dropdown", options:LANG_OPTS}}},
+          {name:"title", selector:{text:{}}}
+        ]},
+        {name:"store", selector:{entity:{filter:{domain:"todo"}}}},
+        {name:"log_entity", selector:{entity:{filter:{domain:"input_text"}}}},
+        {type:"grid", schema:[
+          {name:"default_start", default:75, selector:{number:{min:0, max:100, step:1, mode:"box"}}},
+          {name:"log_lines", default:4, selector:{number:{min:0, max:30, step:1, mode:"box"}}}
+        ]}
+      ],
+      assertConfig(c){ assertObj(c); },
+      computeLabel: mkLabel(),
+      computeHelper: mkHelper()
+    };
+  }
   setConfig(c){ this._c=Object.assign({store:null, log_entity:null, default_start:75, log_lines:4}, c||{}); this._t=T(this._c); this._tr=TRaw(this._c);
     this._parent=false; this._built=false; this._edit=false; if(this._hass) this._render(); }
   _store(){
@@ -876,6 +977,24 @@ class NordpolNice extends HTMLElement {
 /* ---------- ELF OF THE DAY ---------- */
 class NordpolElf extends HTMLElement {
   static getStubConfig(){ return {}; }
+  static getConfigForm(){
+    return {
+      schema:[
+        {type:"grid", schema:[
+          {name:"language", selector:{select:{mode:"dropdown", options:LANG_OPTS}}},
+          {name:"title", selector:{text:{}}}
+        ]},
+        {type:"grid", schema:[
+          {name:"date", selector:{text:{}}},
+          {name:"time_zone", selector:{text:{}}}
+        ]},
+        {name:"entity", selector:{entity:{}}}
+      ],
+      assertConfig(c){ assertObj(c); },
+      computeLabel: mkLabel(),
+      computeHelper: mkHelper()
+    };
+  }
   setConfig(c){ this._t=T(c); this._tr=TRaw(c); this._c=Object.assign({title:this._tr.elf_title, entity:null},c||{}); this._last=null; if(!this._c.entity) this._render(this._builtin()); }
   _now(){ return nowInTz(this._c.time_zone||(this._hass&&this._hass.config&&this._hass.config.time_zone)); }
   _list(){ const u=this._c&&this._c.elves; return (u&&u.length)?u.map(e=>Array.isArray(e)?e:[e.name,e.joke,e.task]):this._tr.elves; }
@@ -947,6 +1066,24 @@ function tzOffsetH(tz, y, mo=11, dd=24){ if(!tz) return null; try{ const d=new D
   return Math.round((Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute)-d)/900000)/4; }catch(e){ return null; } }
 class NordpolSleigh extends HTMLElement {
   static getStubConfig(){ return {eta:"23:59"}; }
+  static getConfigForm(){
+    return {
+      schema:[
+        {type:"grid", schema:[
+          {name:"language", selector:{select:{mode:"dropdown", options:LANG_OPTS}}},
+          {name:"title", selector:{text:{}}}
+        ]},
+        {type:"grid", schema:[
+          {name:"eta", default:"23:59", selector:{text:{}}},
+          {name:"date", selector:{text:{}}}
+        ]},
+        {name:"time_zone", selector:{text:{}}}
+      ],
+      assertConfig(c){ assertObj(c); },
+      computeLabel: mkLabel(),
+      computeHelper: mkHelper()
+    };
+  }
   setConfig(c){ this._c=Object.assign({eta:"23:59"}, c||{}); this._t=T(this._c); this._tr=TRaw(this._c); this._demo=false; this._route=null; this._build(); }
   set hass(h){ const first=!this._hass; this._hass=h; if(first){ this._makeRoute(); this._drawBase(); this._tick(); } }
   getCardSize(){ return 6; }
@@ -1081,7 +1218,7 @@ class NordpolSleigh extends HTMLElement {
 /* ---------- TABLET BOARD (panel view) ---------- */
 class NordpolBoard extends HTMLElement {
   static getConfigElement(){ return document.createElement("nordpol-board-card-editor"); }
-  static getStubConfig(){ return {default_tab:"sleigh",cams:{cams:[{label:"CAM 01 – REINDEER PADDOCK"},{label:"CAM 02 – TOY WORKSHOP"},{label:"CAM 03 – MAILROOM"},{label:"CAM 04 – BAKERY"}]},sleigh:{eta:"23:59"},nice:{},elf:{}}; }
+  static getStubConfig(hass, entities){ return {default_tab:"sleigh",cams:{cams:[{label:"CAM 01 – REINDEER PADDOCK"},{label:"CAM 02 – TOY WORKSHOP"},{label:"CAM 03 – MAILROOM"},{label:"CAM 04 – BAKERY"}]},sleigh:{eta:"23:59"},nice:hasDefaultTodo(hass,entities)?{store:"todo.nordpol_nice_list"}:{},elf:{}}; }
   setConfig(c){ this._c=c||{}; this._build(); this._checkVersion(); }
   set hass(h){ this._hass=h; (this._kids||[]).forEach(k=>k.hass=h); }
   /* If the dashboard config asks for a newer card (min_version) than the JS this browser has loaded, reload once so a
@@ -1144,23 +1281,104 @@ class NordpolBoard extends HTMLElement {
 }
 
 /* ---------- VISUAL CONFIG EDITOR (nordpol-board-card) ---------- */
-const ED_T = {
- en: {lang:"Language",tab:"Default tab",date:"Celebration date (MM-DD)",target:"Countdown target (MM-DD HH:MM)",eta:"Sleigh ETA (HH:MM)",store:"Nice list (Local To-do entity)",sel:"Select to-do list",ov:"Camera overlay",hb:"Home button path (optional)",snow:"Falling snow in hero",tip:"Tip: Advanced options (custom cams, strings, extra sleigh stops) are preserved in YAML."},
- da: {lang:"Sprog",tab:"Startfane",date:"Festdato (MM-DD)",target:"Nedtællingsmål (MM-DD TT:MM)",eta:"Kane-ankomst (TT:MM)",store:"Artig-liste (Local To-do entitet)",sel:"Vælg to-do liste",ov:"Kamera-overlay",hb:"Hjem-knap sti (valgfri)",snow:"Snevejr i toppen",tip:"Tip: Avancerede felter (kameraer, tekster, ekstra stop) bevares i YAML."},
- fr: {lang:"Langue",tab:"Onglet par défaut",date:"Date de fête (MM-JJ)",target:"Cible du compte à rebours (MM-JJ HH:MM)",eta:"Arrivée du traîneau (HH:MM)",store:"Liste des enfants sages (entité To-do)",sel:"Choisir une liste",ov:"Superposition caméra",hb:"Chemin bouton Accueil (optionnel)",snow:"Neige qui tombe dans l’en-tête",tip:"Astuce : Les options avancées (caméras, textes, arrêts) sont conservées en YAML."},
- de: {lang:"Sprache",tab:"Start-Tab",date:"Feiertag (MM-TT)",target:"Countdown-Ziel (MM-TT SS:MM)",eta:"Schlitten-Ankunft (SS:MM)",store:"Artig-Liste (Local-To-do-Entität)",sel:"To-do-Liste wählen",ov:"Kamera-Overlay",hb:"Home-Button-Pfad (optional)",snow:"Schneefall im Kopfbereich",tip:"Tipp: Erweiterte Optionen (Kameras, Texte, Extra-Stopps) bleiben in YAML erhalten."},
- es: {lang:"Idioma",tab:"Pestaña inicial",date:"Fecha de celebración (MM-DD)",target:"Objetivo cuenta atrás (MM-DD HH:MM)",eta:"Llegada del trineo (HH:MM)",store:"Lista de niños buenos (entidad To-do)",sel:"Seleccionar lista",ov:"Superposición de cámara",hb:"Ruta botón Inicio (opcional)",snow:"Nieve cayendo en la cabecera",tip:"Consejo: Las opciones avanzadas (cámaras, textos, paradas) se conservan en YAML."}
-};
 class NordpolBoardEditor extends HTMLElement {
+  connectedCallback(){
+    if(!customElements.get("ha-form")){
+      try{ window.loadCardHelpers && Promise.resolve(window.loadCardHelpers()).catch(()=>{}); }catch(e){}
+      if(!this._waitHa){ this._waitHa=true; customElements.whenDefined("ha-form").then(()=>{ if(this.isConnected) this._render(); }); }
+    }else if(this._c && !this._form){ this._render(); }
+  }
   setConfig(c){ this._c=Object.assign({},c||{}); this._render(); }
-  set hass(h){ const first=!this._hass; this._hass=h; if(first) this._render(); }
+  set hass(h){ const first=!this._hass; this._hass=h; if(this._form) this._form.hass=h; else if(first) this._render(); }
   _emit(next){ this._c=next; this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:next},bubbles:true,composed:true})); }
+  _toForm(c){
+    c=c||{};
+    const camOv=c.cams&&c.cams.overlay;
+    const ov=(camOv===false||camOv==="false"||camOv==="off")?"off":(camOv===true||camOv==="true"||camOv==="cctv")?"cctv":"minimal";
+    return {
+      language: c.language||"",
+      default_tab: c.default_tab||"sleigh",
+      date: c.date||"",
+      target: (c.hero&&c.hero.target)||c.target||"",
+      eta: (c.sleigh&&c.sleigh.eta)||"",
+      store: (c.nice&&c.nice.store)||"",
+      overlay: ov,
+      cctv_style: (c.cams&&c.cams.cctv_style)||"color",
+      home_button_path: (c.home_button&&c.home_button.path)||"",
+      time_zone: c.time_zone||"",
+      snow: !c.hero||c.hero.snow!==false
+    };
+  }
+  _fromForm(v){
+    const n=JSON.parse(JSON.stringify(this._c||{}));
+    const s=k=>v[k]!=null?String(v[k]).trim():"";
+    const lg=s("language"); if(lg) n.language=lg; else delete n.language;
+    n.default_tab=v.default_tab||"sleigh";
+    const dt=s("date"); if(dt&&dt!=="12-24") n.date=dt; else delete n.date;
+    const tgt=s("target"); if(tgt) n.hero=Object.assign({},n.hero,{target:tgt}); else { if(n.hero) delete n.hero.target; delete n.target; }
+    const eta=s("eta"); if(eta) n.sleigh=Object.assign({},n.sleigh,{eta}); else if(n.sleigh) delete n.sleigh.eta;
+    const st=s("store"); if(st) n.nice=Object.assign({},n.nice,{store:st}); else if(n.nice) delete n.nice.store;
+    const ov=v.overlay; n.cams=Object.assign({},n.cams,{overlay:ov==="off"||ov===false?false:ov==="cctv"||ov===true?true:"minimal"});
+    const cs=v.cctv_style; if(cs&&cs!=="color") n.cams=Object.assign({},n.cams,{cctv_style:cs}); else if(n.cams) delete n.cams.cctv_style;
+    const hb=s("home_button_path"); if(hb) n.home_button=Object.assign({label:"Home",icon:"🏠"},n.home_button,{path:hb}); else delete n.home_button;
+    const tz=s("time_zone"); if(tz) n.time_zone=tz; else delete n.time_zone;
+    n.hero=Object.assign({},n.hero,{snow:v.snow!==false});
+    return n;
+  }
   _render(){
     const r=this.shadowRoot||this.attachShadow({mode:"open"}); const c=this._c||{};
+    const lg=langOf(c), ed=edOf(c), TR=TRaw(c);
+    if(customElements.get("ha-form")){
+      const sk=lg+"|"+JSON.stringify(c.strings||"");
+      if(!this._schema || this._schemaKey!==sk){
+        const tabs=[{value:"sleigh",label:"🛷 "+TR.tab_sleigh},{value:"nice",label:"⭐ "+TR.tab_nice},{value:"elf",label:"🧝 "+TR.tab_elf}];
+        this._schemaKey=sk;
+        this._schema=[
+          {type:"grid", schema:[
+            {name:"language", selector:{select:{mode:"dropdown", options:LANG_OPTS}}},
+            {name:"default_tab", default:"sleigh", selector:{select:{mode:"dropdown", options:tabs}}}
+          ]},
+          {type:"grid", schema:[
+            {name:"date", selector:{text:{}}},
+            {name:"target", selector:{text:{}}}
+          ]},
+          {type:"grid", schema:[
+            {name:"eta", default:"23:59", selector:{text:{}}},
+            {name:"store", selector:{entity:{filter:{domain:"todo"}}}}
+          ]},
+          {type:"grid", schema:[
+            {name:"overlay", default:"minimal", selector:{select:{mode:"dropdown", options:OV_OPTS}}},
+            {name:"cctv_style", default:"color", selector:{select:{mode:"dropdown", options:CCTV_OPTS}}}
+          ]},
+          {type:"grid", schema:[
+            {name:"home_button_path", selector:{text:{}}},
+            {name:"time_zone", selector:{text:{}}}
+          ]},
+          {name:"snow", default:true, selector:{boolean:{}}}
+        ];
+      }
+      if(!this._form){
+        r.innerHTML=`<style>.note{margin-top:10px;font-size:12px;color:var(--secondary-text-color,#666)}</style><div class="note" id="tip"></div>`;
+        const f=this._form=document.createElement("ha-form");
+        f.computeLabel=(s,d)=>mkLabel(this._c)(s,d);
+        f.computeHelper=(s,d)=>mkHelper(this._c)(s,d);
+        f.addEventListener("value-changed",e=>{ const v=e.detail&&e.detail.value; if(v) this._emit(this._fromForm(v)); });
+        r.insertBefore(f, r.getElementById("tip"));
+      }
+      const f=this._form;
+      if(f.schema!==this._schema) f.schema=this._schema;
+      f.data=this._toForm(c);
+      if(this._hass) f.hass=this._hass;
+      r.getElementById("tip").textContent=ed.tip;
+      return;
+    }
+    this._form=null; this._schema=null; this._schemaKey=null;
     const todos=this._hass?Object.keys(this._hass.states).filter(k=>k.startsWith("todo.")).sort():[];
-    const niceStore=(c.nice&&c.nice.store)||""; const camOv=(c.cams&&c.cams.overlay); const ovVal=camOv===false?"false":camOv===true?"true":"minimal";
+    const niceStore=(c.nice&&c.nice.store)||""; const camOv=(c.cams&&c.cams.overlay);
+    const ovVal=(camOv===false||camOv==="false"||camOv==="off")?"off":(camOv===true||camOv==="true"||camOv==="cctv")?"cctv":"minimal";
+    const cctvVal=(c.cams&&c.cams.cctv_style)||"color";
     const snowOn=!c.hero||c.hero.snow!==false; const hb=(c.home_button&&c.home_button.path)||"";
-    const lg=langOf(c), ed=ED_T[lg]||ED_T.en, L=T(c), tgt=(c.hero&&c.hero.target)||c.target||"";
+    const tgt=(c.hero&&c.hero.target)||c.target||"";
     const tgtPh=["fr","es"].includes(lg)?"12-25 00:00":"12-24 18:00";
     r.innerHTML=`<style>
       .ed{display:grid;gap:12px;font-family:var(--paper-font-body1_-_font-family,system-ui,sans-serif);color:var(--primary-text-color,#222)}
@@ -1173,40 +1391,48 @@ class NordpolBoardEditor extends HTMLElement {
       .note{font-size:12px;opacity:.7;margin-top:-4px}
     </style><div class="ed">
       <div class="row">
-        <label>${ed.lang}
-          <select id="lang"><option value="">Auto</option><option value="en" ${c.language==="en"?"selected":""}>English</option><option value="da" ${c.language==="da"?"selected":""}>Dansk</option><option value="fr" ${c.language==="fr"?"selected":""}>Français</option><option value="de" ${c.language==="de"?"selected":""}>Deutsch</option><option value="es" ${c.language==="es"?"selected":""}>Español</option></select>
+        <label>${esc(ed.lang)}
+          <select id="lang">${LANG_OPTS.map(o=>`<option value="${esc(o.value)}" ${(c.language||"")===o.value?"selected":""}>${esc(o.label)}</option>`).join("")}</select>
         </label>
-        <label>${ed.tab}
-          <select id="tab"><option value="sleigh" ${(c.default_tab||"sleigh")==="sleigh"?"selected":""}>🛷 ${L.tab_sleigh}</option><option value="nice" ${c.default_tab==="nice"?"selected":""}>⭐ ${L.tab_nice}</option><option value="elf" ${c.default_tab==="elf"?"selected":""}>🧝 ${L.tab_elf}</option></select>
+        <label>${esc(ed.tab)}
+          <select id="tab"><option value="sleigh" ${(c.default_tab||"sleigh")==="sleigh"?"selected":""}>🛷 ${esc(TR.tab_sleigh)}</option><option value="nice" ${c.default_tab==="nice"?"selected":""}>⭐ ${esc(TR.tab_nice)}</option><option value="elf" ${c.default_tab==="elf"?"selected":""}>🧝 ${esc(TR.tab_elf)}</option></select>
         </label>
       </div>
       <div class="row">
-        <label>${ed.date}
-          <input id="date" placeholder="12-24" value="${esc(c.date||"12-24")}">
+        <label>${esc(ed.date)}
+          <input id="date" placeholder="12-24" value="${esc(c.date||"")}">
         </label>
-        <label>${ed.target}
+        <label>${esc(ed.target)}
           <input id="target" placeholder="${tgtPh}" value="${esc(tgt)}">
         </label>
       </div>
       <div class="row">
-        <label>${ed.eta}
-          <input id="eta" placeholder="23:59" value="${esc((c.sleigh&&c.sleigh.eta)||"23:59")}">
+        <label>${esc(ed.eta)}
+          <input id="eta" placeholder="23:59" value="${esc((c.sleigh&&c.sleigh.eta)||"")}">
         </label>
-        <label>${ed.store}
-          ${todos.length?`<select id="store"><option value="">— ${ed.sel} —</option>${todos.map(id=>`<option value="${esc(id)}" ${niceStore===id?"selected":""}>${esc(id)}</option>`).join("")}</select>`:
+        <label>${esc(ed.store)}
+          ${todos.length?`<select id="store"><option value="">— ${esc(ed.sel)} —</option>${todos.map(id=>`<option value="${esc(id)}" ${niceStore===id?"selected":""}>${esc(id)}</option>`).join("")}</select>`:
           `<input id="store" placeholder="todo.nordpol_nice_list" value="${esc(niceStore)}">`}
         </label>
       </div>
       <div class="row">
-        <label>${ed.ov}
-          <select id="ov"><option value="minimal" ${ovVal==="minimal"?"selected":""}>Minimal (REC + clock + label)</option><option value="true" ${ovVal==="true"?"selected":""}>CCTV (scanlines + vignette)</option><option value="false" ${ovVal==="false"?"selected":""}>Off (video only)</option></select>
+        <label>${esc(ed.ov)}
+          <select id="ov">${OV_OPTS.map(o=>`<option value="${esc(o.value)}" ${ovVal===o.value?"selected":""}>${esc(o.label)}</option>`).join("")}</select>
         </label>
-        <label>${ed.hb}
-          <input id="hb" placeholder="/lovelace/0" value="${esc(hb)}">
+        <label>${esc(ed.cctv)}
+          <select id="cctv">${CCTV_OPTS.map(o=>`<option value="${esc(o.value)}" ${cctvVal===o.value?"selected":""}>${esc(o.label)}</option>`).join("")}</select>
         </label>
       </div>
-      <label class="chk"><input type="checkbox" id="snow" ${snowOn?"checked":""}> ${ed.snow}</label>
-      <div class="note">${ed.tip}</div>
+      <div class="row">
+        <label>${esc(ed.hb)}
+          <input id="hb" placeholder="/lovelace/0" value="${esc(hb)}">
+        </label>
+        <label>${esc(ed.tz)}
+          <input id="tz" placeholder="Europe/Copenhagen" value="${esc(c.time_zone||"")}">
+        </label>
+      </div>
+      <label class="chk"><input type="checkbox" id="snow" ${snowOn?"checked":""}> ${esc(ed.snow)}</label>
+      <div class="note">${esc(ed.tip)}</div>
     </div>`;
     const $=id=>r.getElementById(id);
     const upd=fn=>{ const n=JSON.parse(JSON.stringify(this._c||{})); fn(n); this._emit(n); };
@@ -1214,10 +1440,12 @@ class NordpolBoardEditor extends HTMLElement {
     $("tab").addEventListener("change",e=>upd(n=>{ n.default_tab=e.target.value; }));
     $("date").addEventListener("change",e=>upd(n=>{ const v=e.target.value.trim(); if(v&&v!=="12-24") n.date=v; else delete n.date; }));
     $("target").addEventListener("change",e=>upd(n=>{ const v=e.target.value.trim(); if(v) n.hero=Object.assign({},n.hero,{target:v}); else { if(n.hero) delete n.hero.target; delete n.target; } }));
-    $("eta").addEventListener("change",e=>upd(n=>{ n.sleigh=Object.assign({},n.sleigh,{eta:e.target.value.trim()||"23:59"}); }));
+    $("eta").addEventListener("change",e=>upd(n=>{ const v=e.target.value.trim(); if(v) n.sleigh=Object.assign({},n.sleigh,{eta:v}); else if(n.sleigh) delete n.sleigh.eta; }));
     $("store").addEventListener("change",e=>upd(n=>{ const v=e.target.value.trim(); if(v) n.nice=Object.assign({},n.nice,{store:v}); else if(n.nice) delete n.nice.store; }));
-    $("ov").addEventListener("change",e=>upd(n=>{ const v=e.target.value; n.cams=Object.assign({},n.cams,{overlay:v==="false"?false:v==="true"?true:"minimal"}); }));
+    $("ov").addEventListener("change",e=>upd(n=>{ const v=e.target.value; n.cams=Object.assign({},n.cams,{overlay:v==="off"?false:v==="cctv"?true:"minimal"}); }));
+    $("cctv").addEventListener("change",e=>upd(n=>{ const v=e.target.value; if(v&&v!=="color") n.cams=Object.assign({},n.cams,{cctv_style:v}); else if(n.cams) delete n.cams.cctv_style; }));
     $("hb").addEventListener("change",e=>upd(n=>{ const v=e.target.value.trim(); if(v) n.home_button=Object.assign({label:"Home",icon:"🏠"},n.home_button,{path:v}); else delete n.home_button; }));
+    $("tz").addEventListener("change",e=>upd(n=>{ const v=e.target.value.trim(); if(v) n.time_zone=v; else delete n.time_zone; }));
     $("snow").addEventListener("change",e=>upd(n=>{ n.hero=Object.assign({},n.hero,{snow:e.target.checked}); }));
   }
 }
