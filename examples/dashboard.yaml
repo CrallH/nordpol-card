@@ -7,13 +7,15 @@ views:
     background: radial-gradient(ellipse at 50% -10%, #1f3b78 0%, #0b1a3a 45%, #050b1f 100%) fixed
     cards:
       - type: custom:nordpol-board-card
-        language: en                 # en | da  (or override any text with `strings:`)
+        language: en                 # en | da | fr | de | es  (or override any text with `strings:`)
         default_tab: sleigh          # sleigh | nice | elf
         # date: "12-25"               # celebration day MM-DD (default 12-24); then also set sleigh.eta and hero.until
+        # time_zone: Europe/Paris     # optional – defaults to your Home Assistant time zone
         return_after_min: 3
         hero:
           title: "🎅 North Pole"
           subtitle: "Santa's secret control room"
+          # target: "12-25 00:00"     # optional countdown target "MM-DD HH:MM" or "HH:MM" (default: 12-24 18:00 for en/da/de, 12-25 00:00 for fr/es)
           snow: true
         cams:
           title: "📹 North Pole cams"

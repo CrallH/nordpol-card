@@ -7,7 +7,7 @@ A self-contained Christmas dashboard for Home Assistant – plug it into any das
 * 🛷 **Sleigh tracker** – simulated Santa flight on Dec 24 to *your* location (test flight: hold the title)
 * ⭐ **Nice list** – kids + scores stored in a Local To-do list, parent mode, elf log
 * 🧝 **Elf of the day** – 30 built-in elves (one per day, with a joke and a small task) or bring your own
-* 🌍 English & Danish built in; every string overridable
+* 🌍 English, Danish, French, German & Spanish built in; every string overridable
 
 ![Nordpol Card demo](docs/demo.gif)
 
@@ -33,11 +33,11 @@ A self-contained Christmas dashboard for Home Assistant – plug it into any das
 ### 2. Add the card (UI or YAML)
 Create a new dashboard view with **View type: Panel** (so the tablet layout fills the screen), then either:
 * **Visual Editor (easiest):** Click **+ Add Card** → pick **Nordpol: tablet board**, and configure language, date, sleigh ETA, and your to-do list right in the UI!
-* **Or paste YAML:** Open **Raw configuration editor** and paste [`examples/dashboard.yaml`](examples/dashboard.yaml) (English) or [`examples/dashboard.da.yaml`](examples/dashboard.da.yaml) (Danish):
+* **Or paste YAML:** Open **Raw configuration editor** and paste an example dashboard ([English](examples/dashboard.yaml), [Danish](examples/dashboard.da.yaml), [French](examples/dashboard.fr.yaml), [German](examples/dashboard.de.yaml), or [Spanish](examples/dashboard.es.yaml)):
 
 ```yaml
 type: custom:nordpol-board-card   # best inside a Panel view
-language: en                      # en | da
+language: en                      # en | da | fr | de | es
 nice:
   store: todo.nordpol_nice_list   # dedicated Local To-do list (or pick in the visual editor)
 elf: {}
@@ -72,11 +72,12 @@ Create a dedicated **Local To-do** list (e.g. `Nordpol nice list` → `todo.nord
 ## Configuration reference (board card)
 | Key | Default | Description |
 |---|---|---|
-| `language` | browser/HA | `en` or `da` |
+| `language` | browser/HA | `en`, `da`, `fr`, `de`, or `es` |
 | `strings` | – | override any text |
 | `default_tab` / `return_after_min` | `sleigh` / `3` | tab shown, and auto-return time |
 | `date` | `12-24` | celebration day as `MM-DD` – e.g. `12-25`, or `01-07` for Orthodox Christmas. Moves the countdown, sleigh flight and elf calendar. Also set `sleigh.eta`, and `hero.until` for the countdown label |
-| `hero.title/subtitle/snow` | – | header |
+| `time_zone` | HA `time_zone` | IANA time zone (e.g. `Europe/Paris`) used for the countdown, cam clock, and elf calendar (falls back to HA server time zone, then browser local time) |
+| `hero.title/subtitle/target/snow` | – | header; `hero.target` (`MM-DD HH:MM` or `HH:MM`) sets the exact countdown target (defaults to `12-24 18:00` for `en`/`da`/`de`, `12-25 00:00` for `fr`/`es`, or `00:00` when `date` is changed) |
 | `cams.cams[]` | `[]` | `label`, optional `file`, optional fallback `src` |
 | `cams.file_dir` / `cams.periods` | `/local/nordpol` / morning, day, evening | see VIDEOS.md |
 | `cams.overlay` | `minimal` | `minimal` = REC dot, live date/clock and camera label on top of your clip, nothing else · `true` = also scanlines, vignette and muted colours · `false` = clip only |

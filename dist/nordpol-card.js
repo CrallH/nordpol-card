@@ -1,7 +1,7 @@
 /* Nordpol Card – a Christmas dashboard for Home Assistant (countdown, elf cams, nice list, elf of the day, sleigh tracker).
    https://github.com/DKAnord/nordpol-card · MIT License · self-contained, no external assets. */
 (() => {
-const VER = "2.3.2";
+const VER = "2.4.0";
 const REPO_URL = "https://github.com/DKAnord/nordpol-card"; // TODO: set before publishing
 /* === Camera periods (override in card config: periods / file_dir). Each period starts at "from" (local time). === */
 const CAM_PERIODS = [
@@ -31,7 +31,7 @@ ha-card{display:block}
 .gold{color:#ffd878}.red{color:#ff5a64}.green{color:#7ef0a8}
 `;
 const pad = n => String(n).padStart(2,"0");
-/* ===== Sprog / language (config: language: da|en, strings: {...} to override) ===== */
+/* ===== Sprog / language (config: language: da|en|fr|de|es, strings: {...} to override) ===== */
 const I18N = {
  da: {
   hero_title:"🎅 Nordpolen", hero_sub:"Julemandens hemmelige kontrolrum", until:"⏳ Juleaften om",
@@ -162,9 +162,204 @@ const I18N = {
    "New bells are fitted to the sleigh 🔔","The elves are sorting wish lists 📜","Wrapping paper: 4,812 km rolled out 🎁",
    "Santa is trying on his new red suit 🎅","The reindeer get extra oats 🌾","The elf radar is being calibrated 📡","Sleigh GPS is getting new maps 🗺️"],
   tab_sleigh:"Sleigh", tab_nice:"Nice list", tab_elf:"Elf", locale:"en-GB"
+ },
+ fr: {
+  hero_title:"🎅 Pôle Nord", hero_sub:"La salle de contrôle secrète du Père Noël", until:"⏳ Noël dans",
+  u_d:"jours", u_h:"heures", u_m:"min", u_s:"sec",
+  n_many:"Encore {n} dodos", n_one:"Plus qu’un dodo – le Père Noël passe cette nuit ! 🎅", n_zero:"Le Père Noël passe cette nuit ! 🎅", n_title:"{n} nuits",
+  party:"🎉 Joyeux Noël ! 🎉", party_sub:"Le Père Noël est passé – regarde sous le sapin ! 🎁",
+  cam_title:"📹 Caméras du Pôle Nord", cam_live:"● EN DIRECT", cam_tap:"toucher pour plein écran", cam_lost:"⚠ SIGNAL PERDU", cam_restore:"reconnexion…",
+  cam_lost_label:"CAM 01 – BUREAU DU PÈRE NOËL", cam_foot:"🔒 Caméra secrète des lutins · réservé aux enfants sages", cam_close:"toucher pour fermer ✕",
+  periods:{morning:"🌅 matin", day:"☀️ journée", evening:"🌙 soir", morgen:"🌅 matin", dag:"☀️ journée", aften:"🌙 soir"},
+  nice_title:"⭐ Liste des enfants sages", nice_sub:"Le carnet du Père Noël", parent:"🔓 Mode parents (se ferme après 2 min)",
+  why:"Que s’est-il passé ? (ex. a aidé à mettre la table)", log_title:"📜 Journal des lutins", no_log:"Aucune note pour l’instant…", hold:"🔒 maintenir le titre 1 sec.",
+  lv:["Oups… du charbon dans la chaussette ? 🪨","Les lutins observent 👀","Presque sage 🙂","Sage ⭐","SUPER sage 🌟"],
+  reset:"🔄 Réinitialiser la liste", reset_q:"Réinitialiser la liste des enfants sages ?", reset_txt:"Chaque enfant revient à son score de départ et le journal des lutins repart à zéro.",
+  yes_reset:"Oui, réinitialiser", cancel:"Annuler", new_start:"Nouveau départ – les lutins observent ! 👀",
+  edit:"✏️ Modifier les enfants", edit_done:"✔ Terminé", e_emoji:"Emoji", e_name:"Prénom", e_start:"Départ", add:"➕ Ajouter", save:"💾", del:"🗑",
+  del_q:"Supprimer {name} ?", del_txt:"{name} sera retiré(e) de la liste. Cette action est irréversible.", yes_del:"Oui, supprimer", new_name:"Nouvel enfant",
+  no_kids:"Aucun enfant sur la liste pour l’instant.", add_kid:"➕ Ajouter un enfant", loading:"Lecture du carnet du Père Noël…",
+  load_err:"Impossible de charger les enfants depuis {store} : {err}", no_entity:"n’existe pas dans Home Assistant", retry:"🔄 Réessayer",
+  stale:"🔄 Nouvelle version de Nordpol – rechargement…", no_store:"Configurez <b>store:</b> avec une liste de tâches dédiée (ou créez <code>todo.nordpol_nice_list</code>) – voir le README.",
+  elf_title:"🧝 Le lutin du jour", elf_date:"{d} décembre", elf_trial:"Lutin d’essai (le vrai lutin arrive le 1er décembre)", elf_duty:"lutin de garde aujourd’hui",
+  elf_joke:"La blague du lutin du jour :", elf_tap:"(toucher pour la réponse)", elf_task:"Mission du lutin du jour :",
+  elves:[["Lutin Pipou", "Que dit un lutin quand il compte ? Un, deux, trois… lutin !", "Dessine une étoile de Noël"],
+    ["Lutin Reniflou", "Pourquoi les rennes chantent-ils si bien ? Parce qu’ils ont toujours le bon bois de voix !", "Aide à mettre la table"],
+    ["Lutin Collant", "Comment appelle-t-on un lutin avec un casque audio ? Comme tu veux, il ne t’entend pas !", "Range ta chambre"],
+    ["Lutin Bouillie", "Que mangent les bonshommes de neige au petit-déjeuner ? Des flocons !", "Fais un gros câlin à quelqu’un que tu aimes"],
+    ["Lutin Clochette", "Pourquoi le Père Noël est-il allé chez le médecin ? Il avait trop de ho-ho-hoquet !", "Fabrique une décoration de Noël"],
+    ["Lutin Cannelle", "Comment appelle-t-on un chat sur la plage à Noël ? Santa Griffe !", "Dis merci trois fois aujourd’hui"],
+    ["Lutin Étincelle", "Comment appelle-t-on le Père Noël quand il fait une pause ? Santa Pause !", "Écris ou dessine une carte de Noël pour quelqu’un"],
+    ["Lutin Muscade", "Pourquoi le bonhomme en pain d’épices est-il allé chez le docteur ? Il se sentait tout émietté !", "Aide à préparer ou cuisiner quelque chose"],
+    ["Lutin Houx", "Comment appelle-t-on un bonhomme de neige en juillet ? Une flaque d’eau !", "Bois un grand verre d’eau comme un lutin en pleine forme"],
+    ["Lutin Guirlande", "Que disent les rennes avant de raconter une blague ? Celle-ci va vous faire traîner de rire !", "Chante une chanson de Noël à voix haute"],
+    ["Lutin Boule-de-Neige", "Pourquoi fait-il si froid à Noël ? Parce qu’on est en décem-brrr !", "Fais un vrai compliment à quelqu’un"],
+    ["Lutin Givre", "Comment voyagent les bonshommes de neige ? En glaçon-cycle !", "Sors prendre l’air frais pendant 15 minutes"],
+    ["Lutin Bûchette", "Quel est le meilleur cadeau de Noël ? Un tambour cassé – impossible de le battre !", "Lis une histoire pendant 10 minutes"],
+    ["Lutin Gingembre", "Pourquoi le Père Noël passe-t-il par la cheminée ? Il a la flemme de sonner !", "Fais ton lit tout seul comme un grand"],
+    ["Lutin Éclat", "Quelle est la matière préférée des lutins à l’école ? L’elfe-abétisation !", "Partage un jouet ou une friandise avec quelqu’un"],
+    ["Lutin Sucre-d’Orge", "Pourquoi le sapin de Noël est-il allé chez le coiffeur ? Il avait besoin d’une petite coupe d’aiguilles !", "Dis à quelqu’un une chose pour laquelle tu es reconnaissant"],
+    ["Lutin Cacao", "Qu’est-ce qui est rouge et blanc et rouge et blanc et rouge et blanc ? Le Père Noël qui dévale une colline !", "Range bien tes chaussures et ton manteau"],
+    ["Lutin Massepain", "Qu’a dit la grande bougie à la petite bougie ? Ce soir, je sors !", "Rends service à quelqu’un sans qu’on te le demande"],
+    ["Lutin Flocon", "Qu’attrape-t-on si l’on mange des décorations de Noël ? Une guirlandite !", "Construis quelque chose avec des blocs, du papier ou de la neige"],
+    ["Lutin Pain-d’Épices", "Pourquoi le Père Noël a-t-il trois jardins ? Pour pouvoir faire ho-ho-ho !", "Appelle ou envoie un message à un grand-parent ou à un ami"],
+    ["Lutin Gaufre", "Quelle est la musique préférée des lutins ? Le papier-cadeau rap !", "Aide à emballer un cadeau"],
+    ["Lutin Érable", "Qu’a dit un bonhomme de neige à l’autre ? Tu sens la carotte toi aussi ?", "Dessine ton plus beau souvenir de Noël"],
+    ["Lutin Biscuit", "Pourquoi la dinde jouait-elle dans l’orchestre ? Parce qu’elle avait déjà les baguettes !", "Choisis un jouet à offrir à quelqu’un d’autre"],
+    ["Lutin Caramel", "Qu’obtient-on en croisant le Père Noël avec un canard ? Un Père Coin-coin !", "Raconte une blague pour faire rire quelqu’un"],
+    ["Lutin Glaçon", "Que faut-il faire quand un lutin éternue ? Lui souhaiter joyeux nez-l !", "Fais 10 sauts en étoile comme les apprentis lutins"],
+    ["Lutin Praline", "Pourquoi les lutins ont-ils des clochettes sur leurs chaussures ? Pour ne pas se perdre dans la neige !", "Brosse-toi très bien les dents – les lutins vérifient !"],
+    ["Lutin Moufle", "Pourquoi les rennes ne savent-ils pas jouer à cache-cache ? Parce que leurs bois dépassent toujours !", "Aide quelqu’un à porter quelque chose"],
+    ["Lutin Canneberge", "Pourquoi un lutin ne va-t-il jamais dormir le ventre vide ? Parce qu’il laisse toujours une part du goûter !", "Dis s’il te plaît et merci toute la journée"],
+    ["Lutin Menthe", "Quel est le gâteau préféré du Père Noël ? Le moelleux au ho-ho-chocolat !", "Passe une heure sans écran"],
+    ["Lutin Truffe", "Où dorment les bonshommes de neige ? Sur des matelas d’eau !", "Danse sur ta chanson préférée"]],
+  sl_title:"🛷 Suivi du traîneau", sl_radar:"Radar des lutins", sl_status:"État de l’atelier", sl_demo_mode:"VOL D’ESSAI (simulé)", sl_live:"EN DIRECT {date}",
+  sl_rows:["🎁 Cadeaux emballés","📜 Listes de souhaits lues","🦌 Forme des rennes","✨ Poussière magique","🍪 Biscuits goûtés"],
+  sl_after_rows:["🎁 Cadeaux livrés","😴 Père Noël","🦌 Rennes à l’écurie"],
+  sl_after:"🎅 Le Père Noël est rentré et fait la grasse matinée. Merci et à l’année prochaine ! 💤",
+  sl_parked:"🛷 Le traîneau est garé au Pôle Nord. Le {date}, suivez-le en direct ici – arrivée prévue à {home} vers {eta}.",
+  sl_pre:"🛷 Chargement du traîneau au Pôle Nord… décollage à {t}", sl_done:"🏁 Le Père Noël a atterri au Pôle Nord. Bonne nuit ! 💤",
+  sl_land:"📍 Le Père Noël atterrit à <b>{a}</b>", sl_fly:"✈️ En vol de <b>{a}</b> vers <b>{b}</b>", sl_here:"🎅🏠 Le Père Noël est à <b>{home}</b> en ce moment ! Regarde par la fenêtre ✨",
+  sl_in_h:"dans {h} h {m} min", sl_in_m:"dans {m} min !", sl_now:"MAINTENANT ! 👀 Regarde par la fenêtre !", sl_been:"Déjà passé par ici ✔",
+  sl_gifts:"🎁 Cadeaux livrés : {n} millions", sl_speed:"⚡ Vitesse : {s} km/s", sl_rudolf:"🦌 Rudolphe : nez bien brillant", sl_eta:"🏠 Arrivée {home}",
+  sl_hint:"maintenir le titre pour un vol d’essai ✈️", sl_np:"Pôle Nord", sl_home:"Maison",
+  sl_news:["Les lutins peignent les derniers chevaux à bascule 🐴","Rudolphe s’entraîne aux atterrissages sur les toits 🏠","Mère Noël teste de nouveaux biscuits 🍪",
+   "De nouveaux grelots sont posés sur le traîneau 🔔","Les lutins trient les listes de souhaits 📜","Papier cadeau : 4 812 km déroulés 🎁",
+   "Le Père Noël essaie son nouveau costume rouge 🎅","Les rennes ont droit à une ration extra d’avoine 🌾","Le radar des lutins est en cours de calibrage 📡","Le GPS du traîneau met ses cartes à jour 🗺️"],
+  tab_sleigh:"Traîneau", tab_nice:"Sages", tab_elf:"Lutin", locale:"fr-FR"
+ },
+ de: {
+  hero_title:"🎅 Nordpol", hero_sub:"Geheimer Kontrollraum des Weihnachtsmanns", until:"⏳ Heiligabend in",
+  u_d:"Tage", u_h:"Std", u_m:"Min", u_s:"Sek",
+  n_many:"Noch {n} Nächte schlafen", n_one:"Nur noch 1 Nacht schlafen! 😴", n_zero:"Heute Abend kommt der Weihnachtsmann! 🎅", n_title:"{n} Nächte",
+  party:"🎉 Frohe Weihnachten! 🎉", party_sub:"Der Weihnachtsmann war da – schau unter den Baum! 🎁",
+  cam_title:"📹 Nordpol-Kameras", cam_live:"● LIVE", cam_tap:"tippen für Vollbild", cam_lost:"⚠ KEIN SIGNAL", cam_restore:"verbinde neu…",
+  cam_lost_label:"CAM 01 – BÜRO DES WEIHNACHTSMANNS", cam_foot:"🔒 Geheime Wichtel-Kamera · nur für artige Kinder", cam_close:"zum Schließen tippen ✕",
+  periods:{morning:"🌅 Morgen", day:"☀️ Tag", evening:"🌙 Abend", morgen:"🌅 Morgen", dag:"☀️ Tag", aften:"🌙 Abend"},
+  nice_title:"⭐ Artig-Liste", nice_sub:"Notizbuch des Weihnachtsmanns", parent:"🔓 Elternmodus (schließt nach 2 Min.)",
+  why:"Was ist passiert? (z. B. beim Tischdecken geholfen)", log_title:"📜 Wichtel-Logbuch", no_log:"Noch keine Einträge…", hold:"🔒 Titel 1 Sek. gedrückt halten",
+  lv:["Oh-oh… Kohle im Stiefel? 🪨","Die Wichtel schauen zu 👀","Fast artig 🙂","Artig ⭐","SUPER artig 🌟"],
+  reset:"🔄 Liste zurücksetzen", reset_q:"Artig-Liste zurücksetzen?", reset_txt:"Alle Kinder werden auf ihren Startwert zurückgesetzt und das Wichtel-Logbuch beginnt von vorn.",
+  yes_reset:"Ja, zurücksetzen", cancel:"Abbrechen", new_start:"Neustart – die Wichtel schauen zu! 👀",
+  edit:"✏️ Kinder bearbeiten", edit_done:"✔ Fertig", e_emoji:"Emoji", e_name:"Name", e_start:"Start", add:"➕ Hinzufügen", save:"💾", del:"🗑",
+  del_q:"{name} löschen?", del_txt:"{name} wird von der Artig-Liste entfernt. Dies kann nicht rückgängig gemacht werden.", yes_del:"Ja, löschen", new_name:"Neues Kind",
+  no_kids:"Noch keine Kinder auf der Liste.", add_kid:"➕ Kind hinzufügen", loading:"Lade Kinder aus dem Notizbuch des Weihnachtsmanns…",
+  load_err:"Kinder konnten nicht aus {store} geladen werden: {err}", no_entity:"existiert nicht in Home Assistant", retry:"🔄 Erneut versuchen",
+  stale:"🔄 Neue Nordpol-Version – Seite wird neu geladen…", no_store:"Setze <b>store:</b> auf eine eigene To-do-Liste (oder erstelle <code>todo.nordpol_nice_list</code>) – siehe README.",
+  elf_title:"🧝 Wichtel des Tages", elf_date:"{d}. Dezember", elf_trial:"Probe-Wichtel (der echte Wichtel kommt am 1. Dezember)", elf_duty:"heute diensthabender Wichtel",
+  elf_joke:"Wichtelwitz des Tages:", elf_tap:"(für die Antwort tippen)", elf_task:"Wichtelaufgabe des Tages:",
+  elves:[["Wichtel Pieps", "Was sagen Wichtel beim Zählen? Eins, zwei, drei… wichtelig!", "Male einen Weihnachtsstern"],
+    ["Wichtel Schnief", "Warum können Rentiere so gut singen? Sie treffen immer den richtigen Geweih-Ton!", "Hilf beim Tischdecken"],
+    ["Wichtel Kleber", "Wie nennt man einen Wichtel mit Kopfhörern? Egal – er hört dich sowieso nicht!", "Räum dein Zimmer auf"],
+    ["Wichtel Haferbrei", "Was essen Schneemänner zum Frühstück? Schneeflocken!", "Umarme jemanden, den du lieb hast"],
+    ["Wichtel Klingel", "Warum ging der Weihnachtsmann zum Arzt? Er hatte zu viel Ho-ho-Husten!", "Bastle eine Weihnachtsdekoration"],
+    ["Wichtel Zimt", "Wie nennt man eine Katze am Strand zu Weihnachten? Sandy Claws!", "Sag heute dreimal Danke"],
+    ["Wichtel Funkel", "Wie heißt der Weihnachtsmann, wenn er sich nicht bewegt? Santa Pause!", "Schreib oder male eine Weihnachtskarte für jemanden"],
+    ["Wichtel Muskat", "Warum ging der Lebkuchenmann zum Arzt? Er fühlte sich ganz zerkrümelt!", "Hilf beim Backen oder Kochen in der Küche"],
+    ["Wichtel Stechpalme", "Wie nennt man einen Schneemann im Juli? Eine Pfütze!", "Trink ein extra Glas Wasser wie ein fitter Wichtel"],
+    ["Wichtel Lametta", "Was sagen Rentiere vor einem Witz? Der haut dich vom Schlitten!", "Sing laut ein Weihnachtslied"],
+    ["Wichtel Kugel", "Warum ist es an Weihnachten so kalt? Weil es Dezem-brrr ist!", "Mach jemandem ein ehrliches Kompliment"],
+    ["Wichtel Frost", "Wie reisen Schneemänner durch die Stadt? Mit dem Eiszapfen-Rad!", "Geh 15 Minuten an die frische Luft"],
+    ["Wichtel Pudding", "Wo bewahren Schneemänner ihr Geld auf? In einer Schneebank!", "Lies 10 Minuten lang eine Geschichte"],
+    ["Wichtel Ingwer", "Warum sitzt der Weihnachtsmann im Schornstein? Weil er keine Lust hat zu klingeln!", "Mach dein Bett ganz alleine"],
+    ["Wichtel Glitzer", "Was ist das Lieblingsfach der Wichtel in der Schule? Wichtel-matik!", "Teile ein Spielzeug oder eine Süßigkeit mit jemandem"],
+    ["Wichtel Zuckerstange", "Warum ging der Weihnachtsbaum zum Friseur? Er brauchte einen Nadelschnitt!", "Erzähl jemandem eine Sache, für die du dankbar bist"],
+    ["Wichtel Kakao", "Was ist rot und weiß und rot und weiß und rot und weiß? Der Weihnachtsmann, der einen Hügel hinunterrollt!", "Stell deine Schuhe und deine Jacke ordentlich weg"],
+    ["Wichtel Marzipan", "Was sagte die große Kerze zur kleinen Kerze? Ich gehe heute Abend aus!", "Tu jemandem einen Gefallen, ohne gefragt zu werden"],
+    ["Wichtel Schneeball", "Was passiert, wenn man Weihnachtsdeko isst? Man bekommt Lametta-itis!", "Bau etwas aus Bausteinen, Papier oder Schnee"],
+    ["Wichtel Pfeffer", "Warum hat der Weihnachtsmann drei Gärten? Damit er Ho-ho-ho rufen kann!", "Ruf Oma, Opa oder einen Freund an oder schreib ihnen"],
+    ["Wichtel Waffel", "Was ist das beste Weihnachtsgeschenk? Eine kaputte Trommel – unschlagbar!", "Hilf beim Einpacken eines Geschenks"],
+    ["Wichtel Ahorn", "Was sagte ein Schneemann zum anderen? Riechst du auch Möhren?", "Male deine schönste Weihnachtserinnerung"],
+    ["Wichtel Keks", "Wo schläft der Weihnachtsmann auf Reisen? In einem Tannen-Bett!", "Wähl ein Spielzeug aus, das du weiterschenken möchtest"],
+    ["Wichtel Bonbon", "Was bekommt man, wenn man den Weihnachtsmann mit einer Ente kreuzt? Ein Weihnachts-Quak!", "Erzähl jemandem einen Witz zum Lachen"],
+    ["Wichtel Eiszapfen", "Wie nennt man einen Wichtel ohne Mütze? Eiskalt erwischt!", "Mach 10 Hampelmänner wie die Wichtel-Azubis"],
+    ["Wichtel Karamell", "Warum tragen Wichtel Schuhe mit Glöckchen? Damit sie sich im Schnee nicht verlaufen!", "Putz dir besonders gründlich die Zähne – die Wichtel schauen zu!"],
+    ["Wichtel Fäustling", "Warum können Rentiere schlecht Verstecken spielen? Weil ihre Geweihe immer herausschauen!", "Hilf jemandem beim Tragen"],
+    ["Wichtel Preiselbeere", "Warum geht ein Wichtel nie hungrig ins Bett? Weil immer Kekse am Kamin stehen!", "Sag den ganzen Tag freundlich Bitte und Danke"],
+    ["Wichtel Pfefferminz", "Was tragen Schneemänner auf dem Kopf? Eiskappen!", "Mach eine Stunde lang bildschirmfreie Zeit"],
+    ["Wichtel Nougat", "Wo schlafen Rentiere? Im Rentier-Bett!", "Tanz zu deinem Lieblingslied"]],
+  sl_title:"🛷 Schlitten-Tracker", sl_radar:"Wichtel-Radar", sl_status:"Werkstatt-Status", sl_demo_mode:"TESTFLUG (simuliert)", sl_live:"LIVE {date}",
+  sl_rows:["🎁 Geschenke verpackt","📜 Wunschzettel gelesen","🦌 Rentier-Fitness","✨ Zauberstaub im Tank","🍪 Plätzchen probiert"],
+  sl_after_rows:["🎁 Geschenke verteilt","😴 Weihnachtsmann","🦌 Rentiere im Stall"],
+  sl_after:"🎅 Der Weihnachtsmann ist wieder zu Hause und schläft aus. Danke für dieses Jahr! 💤",
+  sl_parked:"🛷 Der Schlitten steht am Nordpol bereit. Am {date} könnt ihr ihn hier live verfolgen – geplante Ankunft in {home} gegen {eta} Uhr.",
+  sl_pre:"🛷 Der Schlitten wird am Nordpol beladen… Abflug um {t} Uhr", sl_done:"🏁 Der Weihnachtsmann ist wieder am Nordpol gelandet. Gute Nacht! 💤",
+  sl_land:"📍 Der Weihnachtsmann landet in <b>{a}</b>", sl_fly:"✈️ Unterwegs von <b>{a}</b> nach <b>{b}</b>", sl_here:"🎅🏠 Der Weihnachtsmann ist gerade in <b>{home}</b>! Schau aus dem Fenster ✨",
+  sl_in_h:"in {h} Std. {m} Min.", sl_in_m:"in {m} Min.!", sl_now:"JETZT! 👀 Schau aus dem Fenster!", sl_been:"War schon hier ✔",
+  sl_gifts:"🎁 Geschenke verteilt: {n} Mio.", sl_speed:"⚡ Tempo: {s} km/s", sl_rudolf:"🦌 Rudolf: leuchtet hell", sl_eta:"🏠 Ankunft {home}",
+  sl_hint:"Titel gedrückt halten für Testflug ✈️", sl_np:"Nordpol", sl_home:"Zuhause",
+  sl_news:["Die Wichtel lackieren die letzten Schaukelpferde 🐴","Rudolf übt Landungen auf Hausdächern 🏠","Frau Weihnachtsmann testet neue Plätzchen 🍪",
+   "Neue Glöckchen werden am Schlitten montiert 🔔","Die Wichtel sortieren Wunschzettel 📜","Geschenkpapier: 4.812 km ausgerollt 🎁",
+   "Der Weihnachtsmann probiert seinen neuen roten Mantel 🎅","Die Rentiere bekommen extra Hafer 🌾","Das Wichtel-Radar wird kalibriert 📡","Das Schlitten-Navi lädt neue Karten 🗺️"],
+  tab_sleigh:"Schlitten", tab_nice:"Artig", tab_elf:"Wichtel", locale:"de-DE"
+ },
+ es: {
+  hero_title:"🎅 Polo Norte", hero_sub:"La sala de control secreta de Papá Noel", until:"⏳ Navidad en",
+  u_d:"días", u_h:"horas", u_m:"min", u_s:"seg",
+  n_many:"Faltan {n} noches", n_one:"¡Solo falta 1 noche – Papá Noel viene esta noche! 🎅", n_zero:"¡Papá Noel viene esta noche! 🎅", n_title:"{n} noches",
+  party:"🎉 ¡Feliz Navidad! 🎉", party_sub:"Papá Noel ya ha pasado – ¡mira debajo del árbol! 🎁",
+  cam_title:"📹 Cámaras del Polo Norte", cam_live:"● EN VIVO", cam_tap:"toca para pantalla completa", cam_lost:"⚠ SEÑAL PERDIDA", cam_restore:"reconectando…",
+  cam_lost_label:"CAM 01 – OFICINA DE PAPÁ NOEL", cam_foot:"🔒 Cámara secreta de los elfos · solo para niños buenos", cam_close:"toca para cerrar ✕",
+  periods:{morning:"🌅 mañana", day:"☀️ día", evening:"🌙 noche", morgen:"🌅 mañana", dag:"☀️ día", aften:"🌙 noche"},
+  nice_title:"⭐ Lista de niños buenos", nice_sub:"El cuaderno de Papá Noel", parent:"🔓 Modo padres (se cierra en 2 min)",
+  why:"¿Qué pasó? (p. ej. ayudó a poner la mesa)", log_title:"📜 Diario de los elfos", no_log:"Aún no hay notas…", hold:"🔒 mantén pulsado el título 1 seg.",
+  lv:["Uy… ¿carbón en el calcetín? 🪨","Los elfos están mirando 👀","Casi bueno 🙂","Bueno ⭐","¡SÚPER bueno! 🌟"],
+  reset:"🔄 Reiniciar lista", reset_q:"¿Reiniciar la lista de niños buenos?", reset_txt:"Todos los niños volverán a su puntuación inicial y el diario de los elfos empezará de cero.",
+  yes_reset:"Sí, reiniciar", cancel:"Cancelar", new_start:"¡Nuevo comienzo – los elfos están mirando! 👀",
+  edit:"✏️ Editar niños", edit_done:"✔ Listo", e_emoji:"Emoji", e_name:"Nombre", e_start:"Inicio", add:"➕ Añadir", save:"💾", del:"🗑",
+  del_q:"¿Eliminar a {name}?", del_txt:"Se eliminará a {name} de la lista. Esta acción no se puede deshacer.", yes_del:"Sí, eliminar", new_name:"Nuevo niño",
+  no_kids:"Aún no hay niños en la lista.", add_kid:"➕ Añadir niño", loading:"Cargando los niños del cuaderno de Papá Noel…",
+  load_err:"No se pudieron cargar los niños desde {store}: {err}", no_entity:"no existe en Home Assistant", retry:"🔄 Reintentar",
+  stale:"🔄 Nueva versión de Nordpol – recargando…", no_store:"Configura <b>store:</b> con una lista de tareas dedicada (o crea <code>todo.nordpol_nice_list</code>) – ver README.",
+  elf_title:"🧝 El elfo del día", elf_date:"{d} de diciembre", elf_trial:"Elfo de prueba (el elfo real llega el 1 de diciembre)", elf_duty:"elfo de guardia hoy",
+  elf_joke:"El chiste del elfo del día:", elf_tap:"(toca para ver la respuesta)", elf_task:"Misión del elfo del día:",
+  elves:[["Elfo Pipo", "¿Qué dice un elfo cuando cuenta? ¡Uno, dos, tres… elfo!", "Dibuja una estrella de Navidad"],
+    ["Elfo Moquitos", "¿Por qué cantan tan bien los renos? ¡Porque siempre afinan con sus cuernos!", "Ayuda a poner la mesa"],
+    ["Elfo Pegote", "¿Cómo llamas a un elfo con auriculares? Como quieras, ¡no te puede oír!", "Ordena tu habitación"],
+    ["Elfo Gachas", "¿Qué desayunan los muñecos de nieve? ¡Copos de nieve!", "Dale un abrazo fuerte a alguien que quieras"],
+    ["Elfo Cascabel", "¿Por qué fue Papá Noel al médico? ¡Porque tenía demasiada tos de jo-jo-jo!", "Haz un adorno de Navidad"],
+    ["Elfo Canela", "¿Qué le dice un árbol de Navidad a otro en verano? ¡Qué calor hace sin adornos!", "Da las gracias tres veces hoy"],
+    ["Elfo Destello", "¿Cómo se llama Papá Noel cuando se detiene? ¡Santa Pausa!", "Escribe o dibuja una tarjeta de Navidad para alguien"],
+    ["Elfo Nuez-Moscada", "¿Por qué fue el muñeco de jengibre al médico? ¡Porque se sentía hecho migas!", "Ayuda a cocinar o preparar algo rico"],
+    ["Elfo Acebo", "¿Cómo se llama un muñeco de nieve en julio? ¡Un charco!", "Bebe un vaso extra de agua como un elfo sano"],
+    ["Elfo Espumillón", "¿Qué dicen los renos antes de contar un chiste? ¡Este os va a tirar del trineo!", "Canta un villancico bien alto"],
+    ["Elfo Bolita", "¿Por qué hace tanto frío en Navidad? ¡Porque es diciem-brrr!", "Hazle un cumplido sincero a alguien"],
+    ["Elfo Escarcha", "¿Cómo viajan los muñecos de nieve? ¡En bici-hielo!", "Sal a tomar aire fresco durante 15 minutos"],
+    ["Elfo Turrón", "¿Dónde guardan su dinero los muñecos de nieve? ¡En un banco de nieve!", "Lee un cuento durante 10 minutos"],
+    ["Elfo Jengibre", "¿Por qué baja Papá Noel por la chimenea? ¡Porque le da pereza llamar al timbre!", "Haz tu cama tú solo"],
+    ["Elfo Chispa", "¿Cuál es la asignatura favorita de los elfos? ¡Elfo-máticas!", "Comparte un juguete o un dulce con alguien"],
+    ["Elfo Caramelo", "¿Por qué fue el árbol de Navidad a la peluquería? ¡Necesitaba un corte de puntas!", "Cuéntale a alguien una cosa por la que das gracias"],
+    ["Elfo Cacao", "¿Qué es rojo y blanco y rojo y blanco y rojo y blanco? ¡Papá Noel rodando cuesta abajo!", "Guarda bien tus zapatos y tu abrigo"],
+    ["Elfo Mazapán", "¿Qué le dijo la vela grande a la vela pequeña? ¡Esta noche salgo!", "Haz un favor amable sin que te lo pidan"],
+    ["Elfo Copito", "¿Cuál es el animal más navideño? ¡El reno-ceronte!", "Construye algo con bloques, papel o nieve"],
+    ["Elfo Pimienta", "¿Por qué tiene Papá Noel tres jardines? ¡Para poder decir jo-jo-jo!", "Llama o escribe a un abuelo o a un amigo"],
+    ["Elfo Gofre", "¿Cuál es el mejor regalo de Navidad? Un tambor roto: ¡nadie puede superarlo!", "Ayuda a envolver un regalo"],
+    ["Elfo Arce", "¿Qué le dijo un muñeco de nieve al otro? ¿Tú también hueles a zanahoria?", "Dibuja tu mejor recuerdo de Navidad"],
+    ["Elfo Galleta", "¿Dónde duerme Papá Noel cuando viaja? ¡En una cama de pinos!", "Elige un juguete para regalar a otro niño"],
+    ["Elfo Gominola", "¿Qué sale si cruzas a Papá Noel con un pato? ¡Un Papá Cuac-el!", "Cuenta un chiste para hacer reír a alguien"],
+    ["Elfo Carámbano", "¿Qué hace un elfo cuando estornuda? ¡Dice a-chu-smas!", "Haz 10 saltos de tijera como los aprendices de elfo"],
+    ["Elfo Dulce", "¿Por qué llevan cascabeles los zapatos de los elfos? ¡Para no perderse en la nieve!", "Cepíllate muy bien los dientes: ¡los elfos miran!"],
+    ["Elfo Manopla", "¿Por qué no saben jugar al escondite los renos? ¡Porque siempre se les ven los cuernos!", "Ayuda a alguien a llevar algo"],
+    ["Elfo Arándano", "¿Por qué nunca se acuesta con hambre un elfo? ¡Porque siempre dejan galletas junto a la chimenea!", "Di por favor y gracias todo el día"],
+    ["Elfo Menta", "¿Qué llevan los muñecos de nieve en la cabeza? ¡Gorros de hielo!", "Pasa una hora sin pantallas"],
+    ["Elfo Polvorón", "¿Cuál es la música favorita de los elfos? ¡El papel de regalo rap!", "Baila tu canción favorita"]],
+  sl_title:"🛷 Rastreador del trineo", sl_radar:"Radar de los elfos", sl_status:"Estado del taller", sl_demo_mode:"VUELO DE PRUEBA (simulado)", sl_live:"EN VIVO {date}",
+  sl_rows:["🎁 Regalos envueltos","📜 Cartas leídas","🦌 Forma de los renos","✨ Polvo mágico en el tanque","🍪 Galletas probadas"],
+  sl_after_rows:["🎁 Regalos entregados","😴 Papá Noel","🦌 Renos en el establo"],
+  sl_after:"🎅 Papá Noel ya está en casa durmiendo hasta tarde. ¡Gracias y hasta el año que viene! 💤",
+  sl_parked:"🛷 El trineo está aparcado en el Polo Norte. El {date} podrás seguirlo en vivo aquí – llegada prevista a {home} hacia las {eta}.",
+  sl_pre:"🛷 Cargando el trineo en el Polo Norte… salida a las {t}", sl_done:"🏁 Papá Noel ha aterrizado de nuevo en el Polo Norte. ¡Buenas noches! 💤",
+  sl_land:"📍 Papá Noel está aterrizando en <b>{a}</b>", sl_fly:"✈️ Volando de <b>{a}</b> a <b>{b}</b>", sl_here:"🎅🏠 ¡Papá Noel está en <b>{home}</b> ahora mismo! Mira por la ventana ✨",
+  sl_in_h:"en {h} h {m} min", sl_in_m:"¡en {m} min!", sl_now:"¡AHORA! 👀 ¡Mira por la ventana!", sl_been:"Ya pasó por aquí ✔",
+  sl_gifts:"🎁 Regalos entregados: {n} millones", sl_speed:"⚡ Velocidad: {s} km/s", sl_rudolf:"🦌 Rodolfo: nariz brillante", sl_eta:"🏠 Llegada {home}",
+  sl_hint:"mantén pulsado el título para un vuelo de prueba ✈️", sl_np:"Polo Norte", sl_home:"Casa",
+  sl_news:["Los elfos están pintando los últimos caballitos de madera 🐴","Rodolfo practica aterrizajes en los tejados 🏠","Mamá Noel prueba nuevas galletas 🍪",
+   "Colocan cascabeles nuevos en el trineo 🔔","Los elfos ordenan las cartas de deseos 📜","Papel de regalo: 4.812 km desenrollados 🎁",
+   "Papá Noel se prueba su traje rojo nuevo 🎅","Los renos reciben avena extra 🌾","Calibrando el radar de los elfos 📡","El GPS del trineo descarga nuevos mapas 🗺️"],
+  tab_sleigh:"Trineo", tab_nice:"Buenos", tab_elf:"Elfo", locale:"es-ES"
  }
 };
-function langOf(c){ const l=String((c&&c.language)||document.documentElement.lang||navigator.language||"en").toLowerCase(); return l.startsWith("da")?"da":"en"; }
+function langOf(c){ const l=String((c&&c.language)||document.documentElement.lang||navigator.language||"en").toLowerCase(); for(const k of ["da","fr","de","es"]) if(l.startsWith(k)) return k; return "en"; }
 function escVal(v){
   if(Array.isArray(v)) return v.map(escVal);
   if(v && typeof v==="object"){ const o={}; for(const k of Object.keys(v)) o[k]=escVal(v[k]); return o; }
@@ -180,10 +375,26 @@ function T(c){
 function F(s,o){ return String(s).replace(/\{(\w+)\}/g,(_,k)=>o&&o[k]!=null?o[k]:""); }
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 
+function nowInTz(tz, d = new Date()){
+  if(!tz) return d;
+  try{
+    const p=new Intl.DateTimeFormat("en-US",{timeZone:tz,hourCycle:"h23",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"})
+      .formatToParts(d).reduce((a,x)=>(a[x.type]=x.value,a),{});
+    return new Date(+p.year,+p.month-1,+p.day,+p.hour,+p.minute,+p.second,d.getMilliseconds());
+  }catch(e){ return d; }
+}
+function defaultTarget(c){
+  const d=c&&c.date;
+  if(d&&d!=="12-24") return d+" 00:00";
+  return ["fr","es"].includes(langOf(c))?"12-25 00:00":"12-24 18:00";
+}
 /* `date: "MM-DD"` (default 12-24) moves the whole card to another celebration day, e.g. "12-25" or "01-07".
-   Countdown target: config `target: "MM-DD HH:MM"` in the browser's local time (default 12-24 18:00 = Christmas Eve). */
+   Countdown target: config `target: "MM-DD HH:MM"` or `"HH:MM"` in HA/configured time zone (default 12-24 18:00 for da/en/de, 12-25 00:00 for fr/es). */
 function xmasTarget(now = new Date(), c) {
-  const m=String((c&&c.target)||(((c&&c.date)||"12-24")+" 18:00")).match(/(\d+)-(\d+)\s+(\d+):(\d+)/)||[0,12,24,18,0];
+  let raw=c&&c.target?String(c.target).trim():"";
+  if(/^\d{1,2}:\d{2}$/.test(raw)) raw=((c&&c.date)||"12-24")+" "+raw;
+  if(!raw) raw=defaultTarget(c);
+  const m=raw.match(/(\d+)-(\d+)\s+(\d+):(\d+)/)||[0,12,24,18,0];
   const mk=y=>new Date(y,+m[1]-1,+m[2],+m[3],+m[4]); let t=mk(now.getFullYear());
   if (now - t > 2*86400000) t = mk(now.getFullYear()+1);
   return t;
@@ -229,7 +440,7 @@ const Snow = { n:0, cv:null, raf:null, flakes:[],
 class NordpolHero extends HTMLElement {
   static getStubConfig(){ return {snow:true}; }
   setConfig(c){ this._t=T(c); this._c = Object.assign({title:this._t.hero_title, subtitle:this._t.hero_sub, snow:true}, c||{}); this._build(); }
-  set hass(h){ this._hass=h; }
+  set hass(h){ const first=!this._hass; this._hass=h; if(first) this._tick(); }
   getCardSize(){ return 4; }
   getGridOptions(){ return {columns:"full", rows:"auto"}; }
   _build(){
@@ -276,7 +487,7 @@ class NordpolHero extends HTMLElement {
     this._body = r.getElementById("body"); this._tick();
   }
   _tick(){
-    const now = new Date(), t = xmasTarget(now,this._c), L=this._t; let ms = t - now;
+    const now = nowInTz(this._c.time_zone||(this._hass&&this._hass.config&&this._hass.config.time_zone)), t = xmasTarget(now,this._c), L=this._t; let ms = t - now;
     if (ms <= 0) {
       this._body.innerHTML = `<div class="party">${L.party}</div><div class="lbl">${L.party_sub}</div>`; this._built=false;
       return;
@@ -306,7 +517,7 @@ class NordpolHero extends HTMLElement {
 class NordpolCams extends HTMLElement {
   static getStubConfig(){ return {cams:[{label:"CAM 01 – REINDEER PADDOCK"},{label:"CAM 02 – TOY WORKSHOP"},{label:"CAM 03 – MAILROOM"},{label:"CAM 04 – BAKERY"}]}; }
   setConfig(c){ this._t=T(c); this._c = Object.assign({title:this._t.cam_title, cams:[], lost_label:this._t.cam_lost_label, glitch:true}, c||{}); this._blob={}; this._build(); }
-  set hass(h){ this._hass=h; }
+  set hass(h){ const first=!this._hass; this._hass=h; if(first){ this._clock(); this._update(true); } }
   getCardSize(){ return 6; }
   getGridOptions(){ return {columns:"full", rows:"auto"}; }
   _build(){
@@ -377,8 +588,9 @@ class NordpolCams extends HTMLElement {
   }
   /* overlay: "minimal" (default: REC, clock, label only) | true (+ scanlines, vignette, muted colours) | false */
   _ov(){ const o=this._c.overlay; return (o===undefined||o===null||o==="")?"minimal":o; }
+  _now(){ return nowInTz(this._c.time_zone||(this._hass&&this._hass.config&&this._hass.config.time_zone)); }
   _periods(){ const P=(this._c.periods||CAM_PERIODS).map(p=>{const [h,m]=String(p.from).split(":").map(Number); return {name:p.name,min:h*60+(m||0)};}).sort((a,b)=>a.min-b.min); return P; }
-  _period(now=new Date()){ const P=this._periods(); const m=now.getHours()*60+now.getMinutes(); let cur=P[P.length-1];
+  _period(now=this._now()){ const P=this._periods(); const m=now.getHours()*60+now.getMinutes(); let cur=P[P.length-1];
     for(const p of P) if(m>=p.min) cur=p; return cur.name; }
   _fallback(i){ const c=this._c.cams[i]; if(!c||!c.src) return ""; if(!this._blob) this._blob={}; if(this._blob[i]) return this._blob[i];
     if(!c.src.startsWith("data:")) return c.src; try{ return (this._blob[i]=dataToBlobUrl(c.src)); }catch(e){ return ""; } }
@@ -420,7 +632,7 @@ class NordpolCams extends HTMLElement {
     }
   }
   _clock(){
-    const n=new Date(); const s=(this._c.date_format||"DD-MM-YYYY HH:mm:ss").replace(/YYYY|MM|DD|HH|mm|ss/g,k=>({YYYY:n.getFullYear(),MM:pad(n.getMonth()+1),DD:pad(n.getDate()),HH:pad(n.getHours()),mm:pad(n.getMinutes()),ss:pad(n.getSeconds())}[k]));
+    const n=this._now(); const s=(this._c.date_format||"DD-MM-YYYY HH:mm:ss").replace(/YYYY|MM|DD|HH|mm|ss/g,k=>({YYYY:n.getFullYear(),MM:pad(n.getMonth()+1),DD:pad(n.getDate()),HH:pad(n.getHours()),mm:pad(n.getMinutes()),ss:pad(n.getSeconds())}[k]));
     this.shadowRoot.querySelectorAll(".clk").forEach(e=>e.textContent=s);
     if(this._fsClk) this._fsClk.textContent=s;
   }
@@ -653,13 +865,14 @@ class NordpolNice extends HTMLElement {
 class NordpolElf extends HTMLElement {
   static getStubConfig(){ return {}; }
   setConfig(c){ this._t=T(c); this._c=Object.assign({title:this._t.elf_title, entity:null},c||{}); this._last=null; if(!this._c.entity) this._render(this._builtin()); }
+  _now(){ return nowInTz(this._c.time_zone||(this._hass&&this._hass.config&&this._hass.config.time_zone)); }
   _list(){ const u=this._c&&this._c.elves; return (u&&u.length)?u.map(e=>Array.isArray(e)?e:[e.name,e.joke,e.task]):this._t.elves; }
   /* advent day = days until the celebration date counted back from 24 (24 on the day itself, so Dec 1 = 1 with the default date) */
   _adv(n){ const [mo,d]=dateMD(this._c); const t=new Date(eventYear(new Date(),this._c),mo,d); const today=new Date(n.getFullYear(),n.getMonth(),n.getDate());
     return 24-Math.round((t-today)/86400000); }
-  _builtin(){ const E=this._list(), n=new Date(), a=this._adv(n);
+  _builtin(){ const E=this._list(), n=this._now(), a=this._adv(n);
     const i=(a>=1&&a<=30)?(a-1)%E.length:(n.getFullYear()*372+n.getMonth()*31+n.getDate())%E.length; return E[i].join("|"); }
-  set hass(h){ this._hass=h; const st=this._c.entity&&h.states[this._c.entity]; const s=st&&!["unknown","unavailable",""].includes(st.state)?st.state:this._builtin(); if(s!==this._last){this._last=s; this._render(s);} }
+  set hass(h){ const first=!this._hass; this._hass=h; const st=this._c.entity&&h.states[this._c.entity]; const s=st&&!["unknown","unavailable",""].includes(st.state)?st.state:this._builtin(); if(first||s!==this._last){this._last=s; this._render(s);} }
   getCardSize(){ return 4; }
   getGridOptions(){ return {columns:"full", rows:"auto"}; }
   _render(s){
@@ -684,7 +897,7 @@ class NordpolElf extends HTMLElement {
     `);
     const L=this._t; const [name,joke,task]=(s||this._builtin()).split("|");
     let q=joke||"", a=""; const k=q.indexOf("?"); if(k>0){a=q.slice(k+1).trim(); q=q.slice(0,k+1);}
-    const n=new Date(); const adv=this._adv(n);
+    const n=this._now(); const adv=this._adv(n);
     const dd=(adv>=1&&adv<=30)?(adv<=24&&dateMD(this._c)[0]===11&&dateMD(this._c)[1]===24?F(L.elf_date,{d:n.getDate()}):n.toLocaleDateString(L.locale,{day:"numeric",month:"long"})):L.elf_trial;
     const key="nordpol-task-"+n.toDateString();
     const done=localStorage.getItem(key)==="1";
@@ -711,6 +924,11 @@ const STOPS = [
  ["Island","Iceland",64.1,-21.9,0,"00:30+"], ["Brasilien","Brazil",-15.8,-47.9,-3,"23:50"], ["New York","New York",40.7,-74,-5,"23:50"],
  ["Mexico","Mexico",19.4,-99.1,-6,"23:50"], ["Hawaii","Hawaii",21.3,-157.8,-10,"23:50"]
 ];
+const STOP_NAMES = {
+ fr: {"New Zealand":"Nouvelle-Zélande","Australia":"Australie","Japan":"Japon","China":"Chine","India":"Inde","Dubai":"Dubaï","Greece":"Grèce","Italy":"Italie","Germany":"Allemagne","England":"Angleterre","Iceland":"Islande","Brazil":"Brésil","Mexico":"Mexique","Hawaii":"Hawaï","Fiji":"Fidji"},
+ de: {"New Zealand":"Neuseeland","Australia":"Australien","Japan":"Japan","China":"China","India":"Indien","Dubai":"Dubai","Greece":"Griechenland","Italy":"Italien","Germany":"Deutschland","England":"England","Iceland":"Island","Brazil":"Brasilien","Mexico":"Mexiko","Hawaii":"Hawaii","Fiji":"Fidschi"},
+ es: {"New Zealand":"Nueva Zelanda","Australia":"Australia","Japan":"Japón","China":"China","India":"India","Dubai":"Dubái","Kenya":"Kenia","Greece":"Grecia","Italy":"Italia","Germany":"Alemania","England":"Inglaterra","Iceland":"Islandia","Brazil":"Brasil","Mexico":"México","Hawaii":"Hawái","Fiji":"Fiyi"}
+};
 const hm = s => { const plus=/\+$/.test(s); const [h,m]=String(s).replace("+","").split(":").map(Number); return h*60+(m||0)+(plus?1440:0); };
 function tzOffsetH(tz, y, mo=11, dd=24){ if(!tz) return null; try{ const d=new Date(Date.UTC(y,mo,dd,12));
   const p=new Intl.DateTimeFormat("en-US",{timeZone:tz,hourCycle:"h23",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}).formatToParts(d).reduce((a,x)=>(a[x.type]=x.value,a),{});
@@ -725,12 +943,12 @@ class NordpolSleigh extends HTMLElement {
     const y=eventYear(new Date(),c), [dmo,dday]=dateMD(c); const lat=+(h.lat??h.latitude??c.latitude??hc.latitude??51.5), lon=+(h.lon??h.longitude??c.longitude??hc.longitude??0);
     let off=h.utc_offset??c.utc_offset; if(off==null) off=tzOffsetH(h.tz||h.time_zone||c.time_zone||hc.time_zone, y, dmo, dday); if(off==null) off=-new Date(Date.UTC(y,dmo,dday)).getTimezoneOffset()/60;
     return {name:h.name||hc.location_name||this._t.sl_home, lat, lon, off:+off}; }
-  _makeRoute(){ const H=this._home(), da=langOf(this._c)==="da", t0=hm(this._c.eta||"23:59")-H.off*60; this._homeName=H.name; this._homeT=t0; this._homeOff=H.off;
+  _makeRoute(){ const H=this._home(), lg=langOf(this._c), t0=hm(this._c.eta||"23:59")-H.off*60; this._homeName=H.name; this._homeT=t0; this._homeOff=H.off;
     const extra=(this._c.extra_stops||[]).map(s=>[s.name,s.name,+s.lat,+s.lon,+s.utc_offset,s.local||"23:30"]);
     /* All stops are shifted by the same amount as your ETA (default 23:59), so Santa reaches every place at the same local clock time
       and the route stays east→west no matter what ETA/location is configured. */
     const sh=hm(this._c.eta||"23:59")-1439;
-    let R=[...STOPS,...extra].map(s=>({name:da?s[0]:s[1], lat:s[2], lon:s[3], t:hm(s[5])+sh-s[4]*60}))
+    let R=[...STOPS,...extra].map(s=>({name:lg==="da"?s[0]:((STOP_NAMES[lg]&&STOP_NAMES[lg][s[1]])||s[1]), lat:s[2], lon:s[3], t:hm(s[5])+sh-s[4]*60}))
       .filter(s=>Math.abs(s.t-t0)>=8 && Math.hypot(s.lat-H.lat,s.lon-H.lon)>=4 && s.name.toLowerCase()!==String(H.name).toLowerCase() && !(this._c.skip_stops||[]).includes(s.name));
     R.push({name:H.name+" 🏠", lat:H.lat, lon:H.lon, t:t0, home:true}); R.sort((a,b)=>a.t-b.t);
     /* drop stops that would force an implausible hop (e.g. a home in southern Africa squeezed between two distant stops) */
@@ -864,7 +1082,7 @@ class NordpolBoard extends HTMLElement {
     bn.addEventListener("click",()=>location.reload()); r.appendChild(bn);
     if(n<2){ try{ sessionStorage.setItem(key,String(n+1)); }catch(e){} setTimeout(()=>location.reload(),4000); } }
   getCardSize(){ return 12; }
-  _mk(tag,cfg,cls){ const e=document.createElement(tag); const base={}; if(this._c.language) base.language=this._c.language; if(this._c.strings) base.strings=this._c.strings; if(this._c.date) base.date=this._c.date; e.setConfig(Object.assign(base,cfg||{})); if(cls) cls.split(" ").forEach(x=>e.classList.add(x)); if(this._hass) e.hass=this._hass; this._kids.push(e); return e; }
+  _mk(tag,cfg,cls){ const e=document.createElement(tag); const base={}; for(const k of ["language","strings","date","target","time_zone"]) if(this._c[k]) base[k]=this._c[k]; e.setConfig(Object.assign(base,cfg||{})); if(cls) cls.split(" ").forEach(x=>e.classList.add(x)); if(this._hass) e.hass=this._hass; this._kids.push(e); return e; }
   _build(){
     const r=this.shadowRoot||this.attachShadow({mode:"open"}); r.innerHTML=""; this._kids=[];
     css(r, `
@@ -914,6 +1132,13 @@ class NordpolBoard extends HTMLElement {
 }
 
 /* ---------- VISUAL CONFIG EDITOR (nordpol-board-card) ---------- */
+const ED_T = {
+ en: {lang:"Language",tab:"Default tab",date:"Celebration date (MM-DD)",target:"Countdown target (MM-DD HH:MM)",eta:"Sleigh ETA (HH:MM)",store:"Nice list (Local To-do entity)",sel:"Select to-do list",ov:"Camera overlay",hb:"Home button path (optional)",snow:"Falling snow in hero",tip:"Tip: Advanced options (custom cams, strings, extra sleigh stops) are preserved in YAML."},
+ da: {lang:"Sprog",tab:"Startfane",date:"Festdato (MM-DD)",target:"Nedtællingsmål (MM-DD TT:MM)",eta:"Kane-ankomst (TT:MM)",store:"Artig-liste (Local To-do entitet)",sel:"Vælg to-do liste",ov:"Kamera-overlay",hb:"Hjem-knap sti (valgfri)",snow:"Snevejr i toppen",tip:"Tip: Avancerede felter (kameraer, tekster, ekstra stop) bevares i YAML."},
+ fr: {lang:"Langue",tab:"Onglet par défaut",date:"Date de fête (MM-JJ)",target:"Cible du compte à rebours (MM-JJ HH:MM)",eta:"Arrivée du traîneau (HH:MM)",store:"Liste des enfants sages (entité To-do)",sel:"Choisir une liste",ov:"Superposition caméra",hb:"Chemin bouton Accueil (optionnel)",snow:"Neige qui tombe dans l’en-tête",tip:"Astuce : Les options avancées (caméras, textes, arrêts) sont conservées en YAML."},
+ de: {lang:"Sprache",tab:"Start-Tab",date:"Feiertag (MM-TT)",target:"Countdown-Ziel (MM-TT SS:MM)",eta:"Schlitten-Ankunft (SS:MM)",store:"Artig-Liste (Local-To-do-Entität)",sel:"To-do-Liste wählen",ov:"Kamera-Overlay",hb:"Home-Button-Pfad (optional)",snow:"Schneefall im Kopfbereich",tip:"Tipp: Erweiterte Optionen (Kameras, Texte, Extra-Stopps) bleiben in YAML erhalten."},
+ es: {lang:"Idioma",tab:"Pestaña inicial",date:"Fecha de celebración (MM-DD)",target:"Objetivo cuenta atrás (MM-DD HH:MM)",eta:"Llegada del trineo (HH:MM)",store:"Lista de niños buenos (entidad To-do)",sel:"Seleccionar lista",ov:"Superposición de cámara",hb:"Ruta botón Inicio (opcional)",snow:"Nieve cayendo en la cabecera",tip:"Consejo: Las opciones avanzadas (cámaras, textos, paradas) se conservan en YAML."}
+};
 class NordpolBoardEditor extends HTMLElement {
   setConfig(c){ this._c=Object.assign({},c||{}); this._render(); }
   set hass(h){ const first=!this._hass; this._hass=h; if(first) this._render(); }
@@ -923,7 +1148,8 @@ class NordpolBoardEditor extends HTMLElement {
     const todos=this._hass?Object.keys(this._hass.states).filter(k=>k.startsWith("todo.")).sort():[];
     const niceStore=(c.nice&&c.nice.store)||""; const camOv=(c.cams&&c.cams.overlay); const ovVal=camOv===false?"false":camOv===true?"true":"minimal";
     const snowOn=!c.hero||c.hero.snow!==false; const hb=(c.home_button&&c.home_button.path)||"";
-    const da=langOf(c)==="da";
+    const lg=langOf(c), ed=ED_T[lg]||ED_T.en, L=T(c), tgt=(c.hero&&c.hero.target)||c.target||"";
+    const tgtPh=["fr","es"].includes(lg)?"12-25 00:00":"12-24 18:00";
     r.innerHTML=`<style>
       .ed{display:grid;gap:12px;font-family:var(--paper-font-body1_-_font-family,system-ui,sans-serif);color:var(--primary-text-color,#222)}
       .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -935,41 +1161,47 @@ class NordpolBoardEditor extends HTMLElement {
       .note{font-size:12px;opacity:.7;margin-top:-4px}
     </style><div class="ed">
       <div class="row">
-        <label>${da?"Sprog":"Language"}
-          <select id="lang"><option value="">Auto</option><option value="en" ${c.language==="en"?"selected":""}>English</option><option value="da" ${c.language==="da"?"selected":""}>Dansk</option></select>
+        <label>${ed.lang}
+          <select id="lang"><option value="">Auto</option><option value="en" ${c.language==="en"?"selected":""}>English</option><option value="da" ${c.language==="da"?"selected":""}>Dansk</option><option value="fr" ${c.language==="fr"?"selected":""}>Français</option><option value="de" ${c.language==="de"?"selected":""}>Deutsch</option><option value="es" ${c.language==="es"?"selected":""}>Español</option></select>
         </label>
-        <label>${da?"Startfane":"Default tab"}
-          <select id="tab"><option value="sleigh" ${(c.default_tab||"sleigh")==="sleigh"?"selected":""}>🛷 Sleigh</option><option value="nice" ${c.default_tab==="nice"?"selected":""}>⭐ Nice list</option><option value="elf" ${c.default_tab==="elf"?"selected":""}>🧝 Elf</option></select>
+        <label>${ed.tab}
+          <select id="tab"><option value="sleigh" ${(c.default_tab||"sleigh")==="sleigh"?"selected":""}>🛷 ${L.tab_sleigh}</option><option value="nice" ${c.default_tab==="nice"?"selected":""}>⭐ ${L.tab_nice}</option><option value="elf" ${c.default_tab==="elf"?"selected":""}>🧝 ${L.tab_elf}</option></select>
         </label>
       </div>
       <div class="row">
-        <label>${da?"Festdato (MM-DD)":"Celebration date (MM-DD)"}
+        <label>${ed.date}
           <input id="date" placeholder="12-24" value="${esc(c.date||"12-24")}">
         </label>
-        <label>${da?"Kane-ankomst (HH:MM)":"Sleigh ETA (HH:MM)"}
-          <input id="eta" placeholder="23:59" value="${esc((c.sleigh&&c.sleigh.eta)||"23:59")}">
+        <label>${ed.target}
+          <input id="target" placeholder="${tgtPh}" value="${esc(tgt)}">
         </label>
       </div>
-      <label>${da?"Artig-liste (Local To-do entitet)":"Nice list (Local To-do entity)"}
-        ${todos.length?`<select id="store"><option value="">— ${da?"Vælg to-do liste":"Select to-do list"} —</option>${todos.map(id=>`<option value="${esc(id)}" ${niceStore===id?"selected":""}>${esc(id)}</option>`).join("")}</select>`:
-        `<input id="store" placeholder="todo.nordpol_nice_list" value="${esc(niceStore)}">`}
-      </label>
       <div class="row">
-        <label>${da?"Kamera-overlay":"Camera overlay"}
+        <label>${ed.eta}
+          <input id="eta" placeholder="23:59" value="${esc((c.sleigh&&c.sleigh.eta)||"23:59")}">
+        </label>
+        <label>${ed.store}
+          ${todos.length?`<select id="store"><option value="">— ${ed.sel} —</option>${todos.map(id=>`<option value="${esc(id)}" ${niceStore===id?"selected":""}>${esc(id)}</option>`).join("")}</select>`:
+          `<input id="store" placeholder="todo.nordpol_nice_list" value="${esc(niceStore)}">`}
+        </label>
+      </div>
+      <div class="row">
+        <label>${ed.ov}
           <select id="ov"><option value="minimal" ${ovVal==="minimal"?"selected":""}>Minimal (REC + clock + label)</option><option value="true" ${ovVal==="true"?"selected":""}>CCTV (scanlines + vignette)</option><option value="false" ${ovVal==="false"?"selected":""}>Off (video only)</option></select>
         </label>
-        <label>${da?"Hjem-knap sti (valgfri)":"Home button path (optional)"}
+        <label>${ed.hb}
           <input id="hb" placeholder="/lovelace/0" value="${esc(hb)}">
         </label>
       </div>
-      <label class="chk"><input type="checkbox" id="snow" ${snowOn?"checked":""}> ${da?"Snevejr i toppen":"Falling snow in hero"}</label>
-      <div class="note">${da?"Tip: Avancerede felter (kameraer, tekster, ekstra stop) bevares i YAML.":"Tip: Advanced options (custom cams, strings, extra sleigh stops) are preserved in YAML."}</div>
+      <label class="chk"><input type="checkbox" id="snow" ${snowOn?"checked":""}> ${ed.snow}</label>
+      <div class="note">${ed.tip}</div>
     </div>`;
     const $=id=>r.getElementById(id);
     const upd=fn=>{ const n=JSON.parse(JSON.stringify(this._c||{})); fn(n); this._emit(n); };
     $("lang").addEventListener("change",e=>upd(n=>{ if(e.target.value) n.language=e.target.value; else delete n.language; }));
     $("tab").addEventListener("change",e=>upd(n=>{ n.default_tab=e.target.value; }));
     $("date").addEventListener("change",e=>upd(n=>{ const v=e.target.value.trim(); if(v&&v!=="12-24") n.date=v; else delete n.date; }));
+    $("target").addEventListener("change",e=>upd(n=>{ const v=e.target.value.trim(); if(v) n.hero=Object.assign({},n.hero,{target:v}); else { if(n.hero) delete n.hero.target; delete n.target; } }));
     $("eta").addEventListener("change",e=>upd(n=>{ n.sleigh=Object.assign({},n.sleigh,{eta:e.target.value.trim()||"23:59"}); }));
     $("store").addEventListener("change",e=>upd(n=>{ const v=e.target.value.trim(); if(v) n.nice=Object.assign({},n.nice,{store:v}); else if(n.nice) delete n.nice.store; }));
     $("ov").addEventListener("change",e=>upd(n=>{ const v=e.target.value; n.cams=Object.assign({},n.cams,{overlay:v==="false"?false:v==="true"?true:"minimal"}); }));
