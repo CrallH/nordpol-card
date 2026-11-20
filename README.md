@@ -1,5 +1,7 @@
 # 🎅 Nordpol Card
 
+**🇬🇧 English · 🇩🇰 Dansk (Jul / Nisse) · 🇫🇷 Français (Noël / Lutin) · 🇩🇪 Deutsch (Weihnachten / Wichtel) · 🇪🇸 Español (Navidad / Elfo)**
+
 A self-contained Christmas dashboard for Home Assistant – plug it into any dashboard:
 
 * ⏳ **Countdown hero** with snow
