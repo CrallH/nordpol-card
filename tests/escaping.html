@@ -1,0 +1,252 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Escaping &amp; XSS Tests</title><script src="/nordpol-card.js"></script></head>
+<body>
+<script>
+window.__runTests = async () => {
+  const results = { suiteA: [], suiteB: [] };
+  const assert = (suite, name, cond, detail = "") => {
+    if (!cond) throw new Error(suite + " FAIL [" + name + "]: " + detail);
+    results[suite].push(name);
+  };
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const hasEntity = s => /&#39;|&amp;|&quot;|&lt;|&gt;/.test(String(s || ""));
+
+  // --- SUITE A: No double-escaping or raw HTML entities in textContent / storage ---
+  {
+    const RealDate = Date;
+    const dec24 = Date.parse("2026-12-24T17:15:06Z");
+    class MockDate extends RealDate {
+      constructor(...a) { super(...(a.length ? a : [dec24])); }
+      static now() { return dec24; }
+    }
+    window.Date = MockDate;
+
+    const capturedServices = [];
+    const items = [
+      { uid: "1", summary: "O'Connor & Co", status: "needs_action", description: JSON.stringify({ emoji: "🧒", score: 85, start: 75 }) },
+      { uid: "2", summary: "Alice", status: "needs_action", description: JSON.stringify({ emoji: "👧", score: 92, start: 75 }) }
+    ];
+    const hassA = {
+      config: { time_zone: "Europe/London", latitude: 51.5, longitude: -0.1, location_name: "" },
+      states: { "todo.santa_list": { state: "2", attributes: {} } },
+      connection: {
+        subscribeMessage(cb) {
+          queueMicrotask(() => cb({ items }));
+          return Promise.resolve(() => {});
+        }
+      },
+      callService(domain, service, data, target) {
+        capturedServices.push({ domain, service, data, target });
+        return Promise.resolve({});
+      }
+    };
+
+    const strA = {
+      hero_title: "Santa's <North> & \"Pole\"",
+      hero_sub: "Santa's \"secret\" & <room>",
+      until: "Santa's Eve & countdown",
+      cam_title: "Santa's Cams & Feed",
+      cam_lost_label: "CAM 01 – Santa's Office & Desk",
+      cam_foot: "Santa's kids & elves \"only\"",
+      periods: { morning: "Santa's morning & dawn", day: "Santa's day & sun", evening: "Santa's eve & moon" },
+      nice_title: "Santa's Nice & Good List",
+      nice_sub: "Santa's \"notebook\"",
+      why: "Santa's reason & note",
+      edit: "Santa's Edit & Kids",
+      edit_done: "Santa's Done & Save",
+      yes_reset: "Yes, reset Santa's list",
+      yes_del: "Yes, delete from Santa's list",
+      new_start: "Santa's fresh start & watch!",
+      no_log: "Santa's log is empty...",
+      new_name: "Santa's new child & name",
+      del_q: "Delete {name}'s entry?",
+      del_txt: "Remove {name} from Santa's list & log.",
+      load_err: "Can't load {store}: {err}",
+      no_entity: "isn't in HA's state",
+      elf_title: "Santa's Elf & Helper",
+      elves: [["Santa's Elf & Co", "What's Santa's \"joke\"? Santa's <answer>!", "Help Santa's reindeer & elves"]],
+      sl_title: "Santa's Sleigh & Map",
+      sl_home: "Santa's House",
+      sl_np: "Santa's Pole",
+      sl_status: "Santa's workshop",
+      sl_demo_mode: "Santa's test",
+      sl_live: "Santa's LIVE {date}"
+    };
+
+    const board = document.createElement("nordpol-board-card");
+    board.setConfig({
+      language: "en",
+      time_zone: "Europe/London",
+      min_version: "99.0.0",
+      strings: Object.assign({}, strA, { stale: "Santa's new version" }),
+      cams: { remote: false, prefer_files: false, cams: [{ label: "CAM 1" }, { label: "CAM 2" }, { label: "CAM 3" }] },
+      sleigh: { eta: "23:59" },
+      nice: { store: "todo.santa_list" },
+      elf: {}
+    });
+    document.body.appendChild(board);
+    board.hass = hassA;
+    await sleep(60);
+
+    // 1. Stale banner (NordpolBoard._checkVersion)
+    const banner = [...board.shadowRoot.children].find(el => el.tagName === "DIV" && el.textContent.includes("v99.0.0"));
+    assert("suiteA", "board.stale banner textContent", banner && banner.textContent.startsWith("Santa's new version") && !hasEntity(banner.textContent), banner && banner.textContent);
+
+    // 2. Hero
+    const heroSr = board.shadowRoot.querySelector("nordpol-hero-card").shadowRoot;
+    assert("suiteA", "hero title", heroSr.querySelector(".t").textContent === strA.hero_title && !hasEntity(heroSr.querySelector(".t").textContent), heroSr.querySelector(".t").textContent);
+    assert("suiteA", "hero sub", heroSr.querySelector(".st").textContent === strA.hero_sub, heroSr.querySelector(".st").textContent);
+    assert("suiteA", "hero until", heroSr.querySelector(".lbl").textContent === strA.until, heroSr.querySelector(".lbl").textContent);
+
+    // 3. Cams
+    const camSr = board.shadowRoot.querySelector("nordpol-cam-card").shadowRoot;
+    const camHdText = camSr.querySelector(".hd").childNodes[0].textContent;
+    assert("suiteA", "cam title", camHdText === strA.cam_title, camHdText);
+    assert("suiteA", "cam lost_label", camSr.querySelector(".lostT .lab").textContent === strA.cam_lost_label, camSr.querySelector(".lostT .lab").textContent);
+    assert("suiteA", "cam foot", camSr.querySelector(".foot").textContent === strA.cam_foot, camSr.querySelector(".foot").textContent);
+    assert("suiteA", "cam period label", camSr.querySelector(".per").textContent === strA.periods.evening, camSr.querySelector(".per").textContent);
+
+    // 4. Elf
+    const elfSr = board.shadowRoot.querySelector("nordpol-elf-card").shadowRoot;
+    assert("suiteA", "elf name", elfSr.querySelector(".n").textContent === "Santa's Elf & Co", elfSr.querySelector(".n").textContent);
+    assert("suiteA", "elf joke + ans", elfSr.querySelector(".j").textContent.includes("What's Santa's \"joke\"?") && elfSr.querySelector(".ans").textContent === "Santa's <answer>!", elfSr.querySelector(".j").textContent);
+    assert("suiteA", "elf task", elfSr.querySelector(".task span").textContent.includes("Help Santa's reindeer & elves"), elfSr.querySelector(".task span").textContent);
+
+    const standElf = document.createElement("nordpol-elf-card");
+    standElf.setConfig({ language: "en", strings: strA });
+    document.body.appendChild(standElf);
+    assert("suiteA", "standalone elf title", standElf.shadowRoot.querySelector(".hd").childNodes[0].textContent === strA.elf_title, standElf.shadowRoot.querySelector(".hd").textContent);
+
+    // 5. Nice list
+    const niceSr = board.shadowRoot.querySelector("nordpol-nice-card").shadowRoot;
+    assert("suiteA", "nice title", niceSr.querySelector(".hd").childNodes[0].textContent === strA.nice_title, niceSr.querySelector(".hd").textContent);
+    assert("suiteA", "nice why placeholder", niceSr.getElementById("why").placeholder === strA.why, niceSr.getElementById("why").placeholder);
+    assert("suiteA", "nice no_log", niceSr.getElementById("log").textContent.includes(strA.no_log) && !hasEntity(niceSr.getElementById("log").textContent), niceSr.getElementById("log").textContent);
+    assert("suiteA", "nice edit button initial", niceSr.getElementById("ed").textContent === strA.edit, niceSr.getElementById("ed").textContent);
+
+    niceSr.getElementById("rst").click();
+    assert("suiteA", "nice yes_reset", niceSr.getElementById("yes").textContent === strA.yes_reset, niceSr.getElementById("yes").textContent);
+    niceSr.getElementById("yes").click();
+    await sleep(30);
+    const logCall = capturedServices.find(c => c.service === "add_item" && c.data && c.data.item === "📜 log");
+    assert("suiteA", "nice new_start storage payload", logCall && logCall.data.description === strA.new_start && !hasEntity(logCall.data.description), JSON.stringify(logCall));
+
+    niceSr.getElementById("ed").click();
+    assert("suiteA", "nice edit_done", niceSr.getElementById("ed").textContent === strA.edit_done, niceSr.getElementById("ed").textContent);
+    const newNm = niceSr.querySelector(".er.new .nmI");
+    assert("suiteA", "nice new_name placeholder", newNm.placeholder === strA.new_name && !hasEntity(newNm.placeholder), newNm.placeholder);
+    niceSr.querySelector(".er .dl").click();
+    const dqTxt = niceSr.getElementById("dq").textContent;
+    assert("suiteA", "nice delete dialog", dqTxt.includes("Delete O'Connor & Co's entry?") && dqTxt.includes("Remove O'Connor & Co from Santa's list & log.") && !hasEntity(dqTxt), dqTxt);
+    assert("suiteA", "nice yes_del", niceSr.getElementById("yes").textContent === strA.yes_del, niceSr.getElementById("yes").textContent);
+
+    const badNice = document.createElement("nordpol-nice-card");
+    badNice.setConfig({ language: "en", store: "todo.missing", strings: strA });
+    document.body.appendChild(badNice);
+    badNice.hass = hassA;
+    await sleep(20);
+    const errTxt = badNice.shadowRoot.getElementById("err").textContent;
+    assert("suiteA", "nice load_err + no_entity", errTxt.includes("Can't load todo.missing: isn't in HA's state") && !hasEntity(errTxt), errTxt);
+
+    // 6. Sleigh
+    const slSr = board.shadowRoot.querySelector("nordpol-sleigh-card").shadowRoot;
+    assert("suiteA", "sleigh title", slSr.querySelector(".hd").childNodes[0].textContent === strA.sl_title, slSr.querySelector(".hd").textContent);
+    assert("suiteA", "sleigh home marker", slSr.querySelector("svg text").textContent === strA.sl_home, slSr.querySelector("svg text").textContent);
+    assert("suiteA", "sleigh mode live", slSr.getElementById("mode").textContent.startsWith("Santa's LIVE ") && !hasEntity(slSr.getElementById("mode").textContent), slSr.getElementById("mode").textContent);
+    assert("suiteA", "sleigh eta home", slSr.querySelector(".eta").textContent.includes(strA.sl_home) && !hasEntity(slSr.querySelector(".eta").textContent), slSr.querySelector(".eta").textContent);
+
+    const dec5 = Date.parse("2026-12-05T12:00:00Z");
+    class MockDate5 extends RealDate {
+      constructor(...a) { super(...(a.length ? a : [dec5])); }
+      static now() { return dec5; }
+    }
+    window.Date = MockDate5;
+    const preSl = document.createElement("nordpol-sleigh-card");
+    preSl.setConfig({ language: "en", strings: strA });
+    document.body.appendChild(preSl);
+    preSl.hass = hassA;
+    assert("suiteA", "sleigh pre-flight mode", preSl.shadowRoot.getElementById("mode").textContent === strA.sl_status, preSl.shadowRoot.getElementById("mode").textContent);
+
+    board.remove(); standElf.remove(); badNice.remove(); preSl.remove();
+    window.Date = RealDate;
+  }
+
+  // --- SUITE B: XSS resistance ---
+  {
+    window.__xss = undefined;
+    const xss = '<img src=x onerror="window.__xss=1">';
+    const xssStr = {
+      hero_title: xss, hero_sub: xss, until: xss, n_many: xss, n_one: xss, n_zero: xss, n_title: xss,
+      party: xss, party_sub: xss, cam_title: xss, cam_live: xss, cam_tap: xss, cam_lost: xss,
+      cam_restore: xss, cam_lost_label: xss, cam_foot: xss, cam_close: xss,
+      periods: { morning: xss, day: xss, evening: xss },
+      nice_title: xss, nice_sub: xss, parent: xss, why: xss, log_title: xss, no_log: xss, hold: xss,
+      lv: [xss, xss, xss, xss, xss], reset: xss, reset_q: xss, reset_txt: xss, yes_reset: xss,
+      cancel: xss, new_start: xss, edit: xss, edit_done: xss, e_emoji: xss, e_name: xss, e_start: xss,
+      add: xss, save: xss, del: xss, del_q: xss + "{name}", del_txt: xss + "{name}", yes_del: xss,
+      new_name: xss, no_kids: xss, add_kid: xss, loading: xss, load_err: xss + "{store}{err}",
+      no_entity: xss, retry: xss, stale: xss, no_store: xss,
+      elf_title: xss, elf_date: xss, elf_trial: xss, elf_duty: xss, elf_joke: xss, elf_tap: xss, elf_task: xss,
+      elves: [[xss, xss + "? " + xss, xss]],
+      sl_title: xss, sl_radar: xss, sl_status: xss, sl_demo_mode: xss, sl_live: xss,
+      sl_rows: [xss, xss, xss, xss, xss], sl_after_rows: [xss, xss, xss], sl_after: xss,
+      sl_parked: xss + "{home}{eta}{date}", sl_pre: xss, sl_done: xss, sl_land: xss + "{a}",
+      sl_fly: xss + "{a}{b}", sl_here: xss + "{home}", sl_in_h: xss, sl_in_m: xss, sl_now: xss,
+      sl_been: xss, sl_gifts: xss, sl_speed: xss, sl_rudolf: xss, sl_eta: xss + "{home}",
+      sl_hint: xss, sl_np: xss, sl_home: xss, sl_news: [xss],
+      tab_sleigh: xss, tab_nice: xss, tab_elf: xss
+    };
+
+    const items = [{ uid: "1", summary: xss, status: "needs_action", description: JSON.stringify({ emoji: xss, score: 80, start: 75 }) }];
+    const hassB = {
+      config: { time_zone: "UTC", latitude: 51.5, longitude: -0.1, location_name: xss },
+      states: { "todo.xss": { state: "1", attributes: {} } },
+      connection: { subscribeMessage(cb) { queueMicrotask(() => cb({ items })); return Promise.resolve(() => {}); } },
+      callService() { return Promise.resolve({}); }
+    };
+
+    const xBoard = document.createElement("nordpol-board-card");
+    xBoard.setConfig({
+      language: "en",
+      min_version: "99.0.0",
+      strings: xssStr,
+      hero: { title: xss, subtitle: xss, until: xss },
+      cams: { title: xss, footer: xss, lost_label: xss, remote: false, prefer_files: false, cams: [{ label: xss }, { label: xss }, { label: xss }] },
+      sleigh: { title: xss, home: { name: xss, lat: 51.5, lon: -0.1, utc_offset: 0 } },
+      nice: { title: xss, store: "todo.xss" },
+      elf: { title: xss, elves: [{ name: xss, joke: xss + "? " + xss, task: xss }] },
+      home_button: { label: xss, icon: xss, path: "/lovelace/0" }
+    });
+    document.body.appendChild(xBoard);
+    xBoard.hass = hassB;
+    await sleep(60);
+
+    const xNiceSr = xBoard.shadowRoot.querySelector("nordpol-nice-card").shadowRoot;
+    xNiceSr.getElementById("ed").click();
+    xNiceSr.querySelector(".er .dl").click();
+
+    const noStoreNice = document.createElement("nordpol-nice-card");
+    noStoreNice.setConfig({ language: "en", strings: xssStr });
+    document.body.appendChild(noStoreNice);
+    noStoreNice.hass = { config: {}, states: {} };
+
+    await sleep(60);
+
+    const findInjectedImgs = root => {
+      let found = [...root.querySelectorAll("img[src='x']")].length;
+      for (const el of root.querySelectorAll("*")) {
+        if (el.shadowRoot) found += findInjectedImgs(el.shadowRoot);
+      }
+      return found;
+    };
+    const imgs = findInjectedImgs(document);
+    assert("suiteB", "no XSS callback fired", window.__xss === undefined, "window.__xss=" + window.__xss);
+    assert("suiteB", "zero injected img[src=x] nodes", imgs === 0, "found=" + imgs);
+  }
+
+  return results;
+};
+</script>
+</body>
+</html>

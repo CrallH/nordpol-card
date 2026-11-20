@@ -8,12 +8,18 @@ jobs:
       - uses: hacs/action@main
         with: { category: plugin }
   syntax:
+    name: Syntax & browser tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20 }
-      - run: node --check dist/nordpol-card.js
+        with: { node-version: 22 }
+      - name: Syntax check
+        run: node --check dist/nordpol-card.js
+      - name: Validate hacs.json
+        run: node -e 'JSON.parse(require("fs").readFileSync("hacs.json","utf8"))'
+      - name: Browser tests
+        run: node tests/run.mjs
       - name: No private data
         run: |
-          ! grep -rEn "192\.168\.|ntfy\.sh|ses-home" --include=*.js --include=*.yaml --include=*.md . | grep -v "README.md"
+          ! grep -rEn "192\.168\.|ntfy\.sh|ses-home" --include=*.js --include=*.mjs --include=*.html --include=*.yaml --include=*.md . | grep -v "README.md"

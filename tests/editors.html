@@ -1,0 +1,257 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Nordpol Editors &amp; getConfigForm Tests</title>
+  <script src="/nordpol-card.js"></script>
+</head>
+<body>
+  <div id="host"></div>
+  <script>
+    window.__runEditorTests = async function () {
+      const results = [];
+      const assert = (cond, msg) => {
+        if (!cond) throw new Error("Assertion failed: " + msg);
+        results.push(msg);
+      };
+      const eq = (a, b, msg) => {
+        const ja = JSON.stringify(a), jb = JSON.stringify(b);
+        if (ja !== jb) throw new Error(`${msg}: expected ${jb}, got ${ja}`);
+        results.push(msg);
+      };
+      const flattenFields = schema => {
+        const out = [];
+        for (const s of schema || []) {
+          if (s.type === "grid" && Array.isArray(s.schema)) out.push(...flattenFields(s.schema));
+          else out.push(s);
+        }
+        return out;
+      };
+
+      // 1. Custom card registration
+      const types = (window.customCards || []).map(x => x.type);
+      for (const tag of [
+        "nordpol-board-card", "nordpol-hero-card", "nordpol-cam-card",
+        "nordpol-nice-card", "nordpol-elf-card", "nordpol-sleigh-card"
+      ]) {
+        assert(types.includes(tag), `customCards includes ${tag}`);
+      }
+
+      // 2. getConfigForm() on all 5 standalone cards
+      const standalone = [
+        ["nordpol-hero-card", ["language", "date", "title", "subtitle", "target", "until", "time_zone", "snow"]],
+        ["nordpol-cam-card", ["language", "title", "overlay", "cctv_style", "date_format", "time_zone", "footer", "glitch"]],
+        ["nordpol-nice-card", ["language", "title", "store", "log_entity", "default_start", "log_lines"]],
+        ["nordpol-elf-card", ["language", "title", "date", "time_zone", "entity"]],
+        ["nordpol-sleigh-card", ["language", "title", "eta", "date", "time_zone"]]
+      ];
+
+      for (const [tag, expectedNames] of standalone) {
+        const Cls = customElements.get(tag);
+        assert(typeof Cls.getConfigForm === "function", `${tag}.getConfigForm exists`);
+        const form = Cls.getConfigForm();
+        assert(Array.isArray(form.schema) && form.schema.length > 0, `${tag} schema non-empty`);
+        const fields = flattenFields(form.schema);
+        eq(fields.map(f => f.name), expectedNames, `${tag} schema field list`);
+        for (const f of fields) {
+          assert(f.selector && typeof f.selector === "object", `${tag}.${f.name} has selector`);
+        }
+
+        // assertConfig checks
+        form.assertConfig({});
+        form.assertConfig({ strings: { tab_sleigh: "Sled" }, extra_custom: 123 });
+        let threwNull = false;
+        try { form.assertConfig(null); } catch (e) { threwNull = true; }
+        assert(threwNull, `${tag}.assertConfig throws on null`);
+        let threwArr = false;
+        try { form.assertConfig([]); } catch (e) { threwArr = true; }
+        assert(threwArr, `${tag}.assertConfig throws on array`);
+
+        // Localized labels & helpers across all 5 languages
+        for (const lg of ["en", "da", "fr", "de", "es"]) {
+          document.documentElement.lang = lg;
+          for (const f of fields) {
+            const lbl = form.computeLabel(f, () => {});
+            assert(typeof lbl === "string" && lbl.length > 0 && lbl !== f.name, `${tag}.${f.name} label translated in ${lg}: ${lbl}`);
+            const hlp = form.computeHelper(f, () => {});
+            if (["date","target","eta","time_zone","date_format","store","log_entity","entity"].includes(f.name)) {
+              assert(typeof hlp === "string" && hlp.length > 0, `${tag}.${f.name} helper translated in ${lg}`);
+            } else {
+              assert(hlp === "", `${tag}.${f.name} helper empty in ${lg}`);
+            }
+          }
+        }
+        // Data-language override when passed as 2nd arg object
+        document.documentElement.lang = "en";
+        const deLbl = form.computeLabel({ name: "language" }, { language: "de" });
+        eq(deLbl, "Sprache", `${tag} computeLabel honors data.language=de`);
+        const frLbl = form.computeLabel({ name: "language" }, { language: "fr" });
+        eq(frLbl, "Langue", `${tag} computeLabel honors data.language=fr`);
+      }
+
+      // 2b. Nice domain filters & Cams assertConfig cams-must-be-array
+      const niceFields = flattenFields(customElements.get("nordpol-nice-card").getConfigForm().schema);
+      eq(niceFields.find(f => f.name === "store").selector, { entity: { filter: { domain: "todo" } } }, "nice store domain filter");
+      eq(niceFields.find(f => f.name === "log_entity").selector, { entity: { filter: { domain: "input_text" } } }, "nice log_entity domain filter");
+      const camsForm = customElements.get("nordpol-cam-card").getConfigForm();
+      let camsBad = false;
+      try { camsForm.assertConfig({ cams: "not-a-list" }); } catch (e) { camsBad = true; }
+      assert(camsBad, "cams assertConfig throws if cams is not array");
+      camsForm.assertConfig({ cams: [{ label: "CAM 01" }] });
+      results.push("cams assertConfig allows cams list");
+
+      // 3. getStubConfig(hass, entities)
+      const Hero = customElements.get("nordpol-hero-card");
+      const Cams = customElements.get("nordpol-cam-card");
+      const Nice = customElements.get("nordpol-nice-card");
+      const Elf = customElements.get("nordpol-elf-card");
+      const Sleigh = customElements.get("nordpol-sleigh-card");
+      const Board = customElements.get("nordpol-board-card");
+
+      eq(Hero.getStubConfig(), { snow: true }, "hero stub");
+      eq(Elf.getStubConfig(), {}, "elf stub");
+      eq(Sleigh.getStubConfig(), { eta: "23:59" }, "sleigh stub");
+      assert(Cams.getStubConfig().cams.length === 4, "cams stub has 4 cams");
+
+      // Safe Nice/Board stub behavior
+      eq(Nice.getStubConfig({ states: { "todo.shopping_list": {} } }, ["todo.shopping_list"]), {}, "nice stub ignores unrelated todo.shopping_list");
+      eq(Nice.getStubConfig(null, ["todo.shopping_list", "todo.nordpol_nice_list"]), { store: "todo.nordpol_nice_list" }, "nice stub picks todo.nordpol_nice_list from entities");
+      eq(Nice.getStubConfig({ states: { "todo.nordpol_nice_list": {} } }), { store: "todo.nordpol_nice_list" }, "nice stub picks todo.nordpol_nice_list from hass.states");
+
+      const bNo = Board.getStubConfig({ states: { "todo.shopping": {} } }, ["todo.shopping"]);
+      eq(bNo.nice, {}, "board stub keeps nice={} when todo.nordpol_nice_list missing");
+      const bYes = Board.getStubConfig({ states: { "todo.nordpol_nice_list": {} } }, []);
+      eq(bYes.nice, { store: "todo.nordpol_nice_list" }, "board stub populates nice.store when todo.nordpol_nice_list present");
+
+      // 4. NordpolCams._ov() normalization
+      const ovModes = [
+        [undefined, "minimal", true],
+        ["minimal", "minimal", true],
+        [true, true, false],
+        ["true", true, false],
+        ["cctv", true, false],
+        [false, false, false],
+        ["false", false, false],
+        ["off", false, false]
+      ];
+      for (const [val, expectedOv, expectMinClass] of ovModes) {
+        const el = document.createElement("nordpol-cam-card");
+        el.setConfig({ overlay: val, cams: [{ label: "CAM 01" }] });
+        eq(el._ov(), expectedOv, `NordpolCams._ov(${JSON.stringify(val)})`);
+        const card = el.shadowRoot.querySelector("ha-card");
+        assert(card.classList.contains("cctv") === (expectedOv !== false), `NordpolCams class .cctv for ${JSON.stringify(val)}`);
+        assert(card.classList.contains("min") === expectMinClass, `NordpolCams class .min for ${JSON.stringify(val)}`);
+      }
+
+      // 5. NordpolBoardEditor HTML fallback + TRaw escaping + advanced preservation
+      let helpersCalled = false;
+      window.loadCardHelpers = async () => { helpersCalled = true; };
+
+      const host = document.getElementById("host");
+      const ed = Board.getConfigElement();
+      assert(ed.tagName.toLowerCase() === "nordpol-board-card-editor", "getConfigElement returns nordpol-board-card-editor");
+
+      const initCfg = {
+        language: "en",
+        default_tab: "nice",
+        cams: { cams: [{ label: "CAM A" }], overlay: true, cctv_style: "mono" },
+        sleigh: { eta: "22:30", home: { name: "Odense", lat: 55.4, lon: 10.4 } },
+        nice: { store: "todo.nordpol_nice_list", default_start: 80 },
+        home_button: { label: "Back Home", icon: "🏡", path: "/lovelace/home" },
+        strings: { tab_sleigh: "Santa's Sled & Co" },
+        hero: { target: "12-24 19:00", snow: false },
+        time_zone: "Europe/Copenhagen",
+        min_version: "2.0.0"
+      };
+      const changes = [];
+      ed.addEventListener("config-changed", ev => changes.push(ev.detail.config));
+      ed.hass = { states: { "todo.nordpol_nice_list": {}, "todo.other": {} } };
+      ed.setConfig(initCfg);
+      host.appendChild(ed);
+      await Promise.resolve();
+
+      assert(helpersCalled, "connectedCallback triggers window.loadCardHelpers()");
+      assert(!ed.shadowRoot.querySelector("ha-form"), "fallback HTML renders before ha-form is defined");
+      const tabOptText = ed.shadowRoot.querySelector('#tab option[value="sleigh"]').textContent;
+      assert(tabOptText.includes("Santa's Sled & Co") && !tabOptText.includes("&#39;") && !tabOptText.includes("&amp;"), `fallback #tab uses unescaped TRaw: ${tabOptText}`);
+      eq(ed.shadowRoot.getElementById("ov").value, "cctv", "fallback #ov reads boolean overlay=true as cctv");
+      eq(ed.shadowRoot.getElementById("cctv").value, "mono", "fallback #cctv reads mono");
+      eq(ed.shadowRoot.getElementById("tz").value, "Europe/Copenhagen", "fallback #tz reads time_zone");
+
+      // Edit fallback #tz and #ov and verify nested emit + advanced key preservation
+      ed.shadowRoot.getElementById("ov").value = "off";
+      ed.shadowRoot.getElementById("ov").dispatchEvent(new Event("change"));
+      let last = changes[changes.length - 1];
+      eq(last.cams.overlay, false, "fallback #ov=off maps to cams.overlay=false");
+      eq(last.cams.cams, [{ label: "CAM A" }], "fallback preserves cams.cams");
+      eq(last.sleigh.home, { name: "Odense", lat: 55.4, lon: 10.4 }, "fallback preserves sleigh.home");
+      eq(last.home_button, { label: "Back Home", icon: "🏡", path: "/lovelace/home" }, "fallback preserves home_button label & icon");
+      eq(last.min_version, "2.0.0", "fallback preserves min_version");
+
+      // 6. Register mock <ha-form> and verify auto-upgrade, schema caching, and round-trip
+      class MockHaForm extends HTMLElement {}
+      customElements.define("ha-form", MockHaForm);
+      await customElements.whenDefined("ha-form");
+      await new Promise(r => setTimeout(r, 30));
+
+      const haForm = ed.shadowRoot.querySelector("ha-form");
+      assert(!!haForm, "NordpolBoardEditor automatically upgrades to <ha-form> once defined");
+      assert(!!haForm.hass && !!haForm.hass.states["todo.nordpol_nice_list"], "<ha-form> receives hass");
+      eq(haForm.data, {
+        language: "en",
+        default_tab: "nice",
+        date: "",
+        target: "12-24 19:00",
+        eta: "22:30",
+        store: "todo.nordpol_nice_list",
+        overlay: "off",
+        cctv_style: "mono",
+        home_button_path: "/lovelace/home",
+        time_zone: "Europe/Copenhagen",
+        snow: false
+      }, "<ha-form> receives flattened data");
+
+      const schemaEn = haForm.schema;
+      eq(haForm.computeLabel({ name: "cctv_style" }, haForm.data), "CCTV filter style", "<ha-form> computeLabel works in en");
+      assert(haForm.computeHelper({ name: "time_zone" }, haForm.data).includes("IANA"), "<ha-form> computeHelper works in en");
+
+      // Update a non-language field and call setConfig (simulating HA round-trip): schema identity must remain stable!
+      haForm.dispatchEvent(new CustomEvent("value-changed", {
+        detail: { value: Object.assign({}, haForm.data, { eta: "23:15", snow: true }) },
+        bubbles: true, composed: true
+      }));
+      last = changes[changes.length - 1];
+      eq(last.sleigh, { eta: "23:15", home: { name: "Odense", lat: 55.4, lon: 10.4 } }, "<ha-form> preserves sleigh.home when updating eta");
+      eq(last.hero, { target: "12-24 19:00", snow: true }, "<ha-form> updates hero.snow without losing hero.target");
+      ed.setConfig(last);
+      assert(haForm.schema === schemaEn, "<ha-form>.schema keeps object identity when language & strings are unchanged");
+
+      // Switch language to 'de' -> schema rebuilds, computeLabel updates
+      haForm.dispatchEvent(new CustomEvent("value-changed", {
+        detail: { value: Object.assign({}, haForm.data, { language: "de", overlay: "cctv", cctv_style: "color", date: "12-25" }) },
+        bubbles: true, composed: true
+      }));
+      last = changes[changes.length - 1];
+      eq(last.language, "de", "language updated to de");
+      eq(last.date, "12-25", "date updated to 12-25");
+      eq(last.cams.overlay, true, "overlay=cctv maps to cams.overlay=true");
+      assert(!("cctv_style" in last.cams), "cctv_style=color cleans default from cams");
+      ed.setConfig(last);
+      assert(haForm.schema !== schemaEn, "<ha-form>.schema rebuilds when language changes");
+      eq(haForm.computeLabel({ name: "snow" }, haForm.data), "Schneefall im Kopfbereich", "<ha-form> computeLabel updates to de");
+
+      // Switch to French and omit language -> cleans language, preserves custom tab string & switches tip
+      haForm.dispatchEvent(new CustomEvent("value-changed", {
+        detail: { value: Object.assign({}, haForm.data, { language: "", home_button_path: "" }) },
+        bubbles: true, composed: true
+      }));
+      last = changes[changes.length - 1];
+      assert(!("language" in last), "empty language deletes language key");
+      assert(!("home_button" in last), "empty home_button_path deletes home_button key");
+      eq(last.strings, { tab_sleigh: "Santa's Sled & Co" }, "strings preserved across ha-form edits");
+
+      return { count: results.length, checks: results };
+    };
+  </script>
+</body>
+</html>

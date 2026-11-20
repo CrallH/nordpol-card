@@ -24,7 +24,6 @@ A self-contained Christmas dashboard for Home Assistant – plug it into any das
 
 ### 1. Install the card
 [![Open your Home Assistant instance and open a repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=DKAnord&repository=nordpol-card&category=plugin)
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=DKAnord&repository=nordpol-card&category=plugin)
 
 <details>
 <summary>Or install via Marketplace / HACS manually / without either</summary>
