@@ -1,7 +1,7 @@
 /* Nordpol Card – a Christmas dashboard for Home Assistant (countdown, elf cams, nice list, elf of the day, sleigh tracker).
    https://github.com/DKAnord/nordpol-card · MIT License · self-contained, no external assets. */
 (() => {
-const VER = "2.4.0";
+const VER = "2.4.1";
 const REPO_URL = "https://github.com/DKAnord/nordpol-card"; // TODO: set before publishing
 /* === Camera periods (override in card config: periods / file_dir). Each period starts at "from" (local time). === */
 const CAM_PERIODS = [
@@ -365,6 +365,13 @@ function escVal(v){
   if(v && typeof v==="object"){ const o={}; for(const k of Object.keys(v)) o[k]=escVal(v[k]); return o; }
   return esc(v);
 }
+function TRaw(c){
+  const L=I18N[langOf(c)];
+  if(!c||!c.strings||typeof c.strings!=="object") return L;
+  const o=Object.assign({},L);
+  for(const k of Object.keys(c.strings)) if(k!=="__proto__"&&k!=="constructor"&&k!=="prototype") o[k]=c.strings[k];
+  return o;
+}
 function T(c){
   const L=I18N[langOf(c)];
   if(!c||!c.strings||typeof c.strings!=="object") return L;
@@ -439,7 +446,7 @@ const Snow = { n:0, cv:null, raf:null, flakes:[],
 /* ---------- HERO / COUNTDOWN ---------- */
 class NordpolHero extends HTMLElement {
   static getStubConfig(){ return {snow:true}; }
-  setConfig(c){ this._t=T(c); this._c = Object.assign({title:this._t.hero_title, subtitle:this._t.hero_sub, snow:true}, c||{}); this._build(); }
+  setConfig(c){ this._t=T(c); const tr=TRaw(c); this._c = Object.assign({title:tr.hero_title, subtitle:tr.hero_sub, snow:true}, c||{}); this._build(); }
   set hass(h){ const first=!this._hass; this._hass=h; if(first) this._tick(); }
   getCardSize(){ return 4; }
   getGridOptions(){ return {columns:"full", rows:"auto"}; }
@@ -469,15 +476,19 @@ class NordpolHero extends HTMLElement {
     .lights i:nth-child(4n+3){background:#3bff8a;box-shadow:0 0 10px #3bff8a;animation-delay:.8s}
     .lights i:nth-child(4n){background:#4ac3ff;box-shadow:0 0 10px #4ac3ff;animation-delay:1.2s}
     @keyframes tw{from{opacity:.35;transform:scale(.85)}to{opacity:1;transform:scale(1.05)}}
-    :host(.compact) .hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:22px 26px 18px;text-align:left}
-    :host(.compact) .t{font-size:clamp(34px,3.6vw,54px)}
-    :host(.compact) .st{font-size:14px}
-    :host(.compact) #body{display:flex;flex-direction:column;align-items:center}
-    :host(.compact) .lbl{margin:0 0 6px}
-    :host(.compact) .u{min-width:clamp(70px,7vw,104px)}
-    :host(.compact) .v{font-size:clamp(34px,4.2vw,58px)}
-    :host(.compact) .sl{margin-top:10px;font-size:20px}
+    :host(.compact) .hero{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 20px 14px;text-align:left}
+    :host(.compact) .hero>div:first-child{min-width:0;flex:1 1 auto}
+    :host(.compact) .t{font-size:clamp(24px,2.8vw,46px)}
+    :host(.compact) .st{font-size:clamp(10px,1.05vw,13px);letter-spacing:1.1px;line-height:1.25}
+    :host(.compact) #body{display:flex;flex-direction:column;align-items:center;flex:0 1 auto;min-width:0}
+    :host(.compact) .lbl{margin:0 0 6px;font-size:clamp(13px,1.5vw,18px)}
+    :host(.compact) .cd{gap:clamp(6px,1vw,14px)}
+    :host(.compact) .u{min-width:clamp(60px,6.4vw,98px);padding:8px 5px 6px}
+    :host(.compact) .v{font-size:clamp(28px,3.6vw,52px)}
+    :host(.compact) .k{font-size:clamp(9px,1vw,12px);letter-spacing:1px}
+    :host(.compact) .sl{margin-top:8px;padding:6px 14px;font-size:clamp(12px,1.35vw,17px);line-height:1.2;text-align:center;max-width:100%;box-sizing:border-box}
     :host(.compact) .tree{display:none}
+    @media (max-width: 600px){:host(.compact) .hero{flex-direction:column;text-align:center;gap:10px;padding:18px 14px 14px}}
     .party{font-size:clamp(28px,6vw,52px);font-family:${FONT_X};color:#ffd878;margin-top:14px}
     `);
     const lights = Array.from({length:18},()=>"<i></i>").join("");
@@ -499,7 +510,7 @@ class NordpolHero extends HTMLElement {
     const nightTxt = nights<=0 ? L.n_zero : nights===1 ? L.n_one : F(L.n_many,{n:nights});
     const moons = nights>0 && nights<=10 ? `<span class="moons" title="${F(L.n_title,{n:nights})}">${"🌙".repeat(nights)}</span>` : nights<=0 ? "" : "🌙";
     if(!this._built){
-      this._body.innerHTML = `<div class="lbl">${esc(this._c.until||L.until)}</div><div class="cd">
+      this._body.innerHTML = `<div class="lbl">${this._c.until?esc(this._c.until):L.until}</div><div class="cd">
         <div class="u"><div class="v" id="d"></div><div class="k">${L.u_d}</div></div>
         <div class="u"><div class="v" id="h"></div><div class="k">${L.u_h}</div></div>
         <div class="u"><div class="v" id="m"></div><div class="k">${L.u_m}</div></div>
@@ -516,7 +527,7 @@ class NordpolHero extends HTMLElement {
 /* ---------- SURVEILLANCE CAM WALL ---------- */
 class NordpolCams extends HTMLElement {
   static getStubConfig(){ return {cams:[{label:"CAM 01 – REINDEER PADDOCK"},{label:"CAM 02 – TOY WORKSHOP"},{label:"CAM 03 – MAILROOM"},{label:"CAM 04 – BAKERY"}]}; }
-  setConfig(c){ this._t=T(c); this._c = Object.assign({title:this._t.cam_title, cams:[], lost_label:this._t.cam_lost_label, glitch:true}, c||{}); this._blob={}; this._build(); }
+  setConfig(c){ this._t=T(c); this._tr=TRaw(c); this._c = Object.assign({title:this._tr.cam_title, cams:[], lost_label:this._tr.cam_lost_label, glitch:true}, c||{}); this._blob={}; this._build(); }
   set hass(h){ const first=!this._hass; this._hass=h; if(first){ this._clock(); this._update(true); } }
   getCardSize(){ return 6; }
   getGridOptions(){ return {columns:"full", rows:"auto"}; }
@@ -525,16 +536,16 @@ class NordpolCams extends HTMLElement {
     css(r, BASE_CSS + `
     .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
     .grid.one{grid-template-columns:1fr}
-    .tile{position:relative;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000;cursor:pointer;
+    .tile{position:relative;aspect-ratio:16/9;container-type:inline-size;border-radius:10px;overflow:hidden;background:#000;cursor:pointer;
        border:2px solid #1d2a1d;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 4px 14px rgba(0,0,0,.6)}
     .tile video,.tile canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:grayscale(1) contrast(1.15) brightness(.95)}
     .tile canvas{image-rendering:pixelated}
     .scan{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px);
        box-shadow:inset 0 0 40px rgba(0,0,0,.85);mix-blend-mode:multiply}
     .ov{position:absolute;inset:0;pointer-events:none;font-family:"Courier New",ui-monospace,monospace;color:#f2f2f2;
-       text-shadow:0 0 3px #000,0 0 6px #000;font-size:clamp(9px,1.9vw,13px);font-weight:700}
+       text-shadow:0 0 3px #000,0 0 6px #000;font-size:clamp(8.5px,3.9cqi,13.5px);font-weight:700}
     .rec{position:absolute;top:6px;left:8px;display:flex;align-items:center;gap:5px}
-    .dot{width:9px;height:9px;border-radius:50%;background:#ff2230;box-shadow:0 0 8px #ff2230;animation:bl 1s steps(1) infinite}
+    .dot{width:.72em;height:.72em;border-radius:50%;background:#ff2230;box-shadow:0 0 8px #ff2230;animation:bl 1s steps(1) infinite}
     @keyframes bl{50%{opacity:0}}
     .clk{position:absolute;top:6px;right:8px}
     .lab{position:absolute;bottom:6px;left:8px;right:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -548,13 +559,14 @@ class NordpolCams extends HTMLElement {
     .tile.blip video{filter:contrast(1.15) brightness(1.08)}
     :host(.fill){height:100%}
     :host(.fill) ha-card{height:100%;display:flex;flex-direction:column;box-sizing:border-box}
-    :host(.fill) .bd{flex:1;min-height:0;display:flex;flex-direction:column}
+    :host(.fill) .bd{flex:1;min-height:0;display:flex;flex-direction:column;padding:4px 14px 10px}
     :host(.fill) .wrap{flex:1;min-height:0;container-type:size;display:flex;align-items:center;justify-content:center}
     :host(.fill) .grid{--tw:min(calc((100cqw - 10px)/2),calc((100cqh - 10px)/2*16/9));grid-template-columns:repeat(2,var(--tw));gap:10px}
     :host(.fill) .grid.one{--tw:min(100cqw,calc(100cqh*16/9));grid-template-columns:var(--tw)}
     :host(.fill) .tile{aspect-ratio:16/9;width:var(--tw)}
-    :host(.fill) .ov{font-size:clamp(11px,1.15vw,15px)}
-    :host(.fill) .hd{font-size:28px}
+    :host(.fill) .hd{font-size:clamp(17px,2vw,25px);padding:14px 16px 6px;gap:8px;white-space:nowrap}
+    :host(.fill) .hd small{font-size:clamp(10px,1vw,12px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex-shrink:1}
+    @media (max-width: 560px){:host(.fill) .hd{white-space:normal;flex-wrap:wrap}:host(.fill) .hd small{white-space:normal}}
     .mini{display:none;position:absolute;bottom:7px;right:9px;width:6px;height:6px;border-radius:50%;background:#ff2230;opacity:.7;box-shadow:0 0 4px #ff2230;animation:bl 1.4s steps(1) infinite;pointer-events:none}
     .tile[data-kind=file] video{filter:none;object-fit:contain}
     .np:not(.cctv) .tile[data-kind=file] .scan,.np:not(.cctv) .tile[data-kind=file] .ov{display:none}
@@ -566,7 +578,7 @@ class NordpolCams extends HTMLElement {
     .np.min .tile[data-kind=file] video{object-fit:cover;filter:none}
     .np.min .tile[data-kind=file] .scan{display:none}
     .tile[data-kind=file]{border-color:#2a3550}
-    .foot{margin-top:10px;font-size:12px;color:#cfe8d8;opacity:.85;text-align:center}
+    .foot{margin-top:6px;font-size:11px;color:#cfe8d8;opacity:.85;text-align:center}
     `);
     const cams = this._c.cams || []; const L=this._t;
     const tiles = cams.map((c,i)=>`<div class="tile" data-i="${i}"><video muted playsinline loop autoplay preload="auto"></video>
@@ -577,7 +589,7 @@ class NordpolCams extends HTMLElement {
     const showLost = cams.length > 1 && cams.length % 2 === 1 && this._c.fill_lost !== false;
     const ov=this._ov(); r.innerHTML += `<ha-card class="np ${ov!==false?"cctv":""} ${ov==="minimal"?"min":"st-"+esc(this._c.cctv_style||"color")}"><div class="hd">${esc(this._c.title)}<small>${L.cam_live} · <span class="per"></span> · ${L.cam_tap}</small></div>
       <div class="bd"><div class="wrap"><div class="grid${cams.length===1?" one":""}">${tiles}${showLost?lost:""}</div></div>
-      <div class="foot">${esc(this._c.footer!=null?this._c.footer:L.cam_foot)}</div></div></ha-card>`;
+      <div class="foot">${this._c.footer!=null?esc(this._c.footer):L.cam_foot}</div></div></ha-card>`;
     this._vids=[...r.querySelectorAll("video")];
     this._vids.forEach((v,i)=>{ v.muted=true; v.defaultMuted=true;
       v.addEventListener("error",()=>{ if(v.dataset.kind==="file"){ this._exists[v.dataset.url]={ok:false,t:Date.now()}; this._update(true); } }); });
@@ -620,7 +632,7 @@ class NordpolCams extends HTMLElement {
         if(!cached || cached.ok || Date.now()-cached.t >= CAM_RECHECK_MIN*60000){ this._setSrc(i,rurl,"file",rurl); return; }
       }
       this._setNone(i); }));
-    const pl=this.shadowRoot.querySelector(".per"); if(pl) pl.textContent=(this._c.period_labels||this._t.periods)[per]||per; }
+    const pl=this.shadowRoot.querySelector(".per"); if(pl) pl.textContent=(this._c.period_labels||this._tr.periods)[per]||per; }
   _noise(){
     if (document.hidden) return;
     for (const cv of this._canv){
@@ -682,7 +694,7 @@ const LOG_ITEM = "📜 log";
 const clamp100 = v => Math.max(0, Math.min(100, Math.round(+v || 0)));
 class NordpolNice extends HTMLElement {
   static getStubConfig(){ return {store:"todo.nordpol_nice_list"}; }
-  setConfig(c){ this._c=Object.assign({store:null, log_entity:null, default_start:75, log_lines:4}, c||{}); this._t=T(this._c);
+  setConfig(c){ this._c=Object.assign({store:null, log_entity:null, default_start:75, log_lines:4}, c||{}); this._t=T(this._c); this._tr=TRaw(this._c);
     this._parent=false; this._built=false; this._edit=false; if(this._hass) this._render(); }
   _store(){
     if(this._c.store) return this._c.store;
@@ -699,7 +711,7 @@ class NordpolNice extends HTMLElement {
   async _sub(){
     const st=this._store();
     if(this._subbed || !this._hass || !st || !this.isConnected || Date.now()<(this._nextTry||0)) return;
-    if(!this._hass.states[st]){ if(!this._err){ this._fail(F(this._t.load_err,{store:st, err:this._t.no_entity})); } return; }
+    if(!this._hass.states[st]){ if(!this._err){ this._fail(F(this._tr.load_err,{store:st, err:this._tr.no_entity})); } return; }
     this._subbed=true;
     const gen=this._gen=(this._gen||0)+1; const live=()=>gen===this._gen && this.isConnected;
     clearTimeout(this._lt); this._lt=setTimeout(()=>{ if(live() && !this._items) this._fallback(gen); }, 6000);
@@ -718,7 +730,7 @@ class NordpolNice extends HTMLElement {
       const resp=(r&&r.response)||{}; const it=(resp[st]||{}).items; if(Array.isArray(it)){ if(gen===this._gen) this._gotItems(it); this._fbBusy=false; return; } }
     catch(e){ err=e; }
     this._fbBusy=false; if(gen!==this._gen) return; this._subbed=false; this._nextTry=Date.now()+30000;
-    if(!this._items) this._fail(F(this._t.load_err,{store:st, err:String((err&&(err.message||err.code))||err||"timeout")}));
+    if(!this._items) this._fail(F(this._tr.load_err,{store:st, err:String((err&&(err.message||err.code))||err||"timeout")}));
   }
   _gotItems(items){ clearTimeout(this._lt); this._nextTry=0; this._items=Array.isArray(items)?items:[]; this._err=null; this._render(); }
   _fail(msg){ clearTimeout(this._lt); this._err=msg; this._render(); }
@@ -784,18 +796,18 @@ class NordpolNice extends HTMLElement {
       .dlg.on{display:flex}
       .dlg>div{max-width:min(86vw,520px);padding:18px;border-radius:16px;background:#1a2550;border:2px solid #ffd878;text-align:center;font-size:16px;line-height:1.45;box-shadow:0 10px 30px rgba(0,0,0,.6)}
       .dlg p{margin:0 0 14px} .dlg button{margin:4px}.dlg .yes{background:#b3121f}.dlg .no{background:#38446e}
-      :host(.tab) .hd{font-size:24px;padding-top:16px} :host(.tab) .hd small{font-size:13px}
-      :host(.tab) .nm{font-size:22px} :host(.tab) .nm span{font-size:16px}
-      :host(.tab) .av{width:64px;height:64px;font-size:38px} :host(.tab) .kid{grid-template-columns:64px 1fr;gap:14px;padding:14px 0}
-      :host(.tab) .bar{height:26px} :host(.tab) .star{font-size:24px;top:-2px}
+      :host(.tab) .hd{font-size:clamp(16px,1.75vw,22px);padding:14px 16px 4px;gap:8px} :host(.tab) .hd small{font-size:clamp(10px,1vw,12px);text-align:right;line-height:1.2}
+      :host(.tab) .nm{font-size:clamp(17px,1.8vw,21px)} :host(.tab) .nm span{font-size:clamp(13px,1.3vw,15px)}
+      :host(.tab) .av{width:56px;height:56px;font-size:32px} :host(.tab) .kid{grid-template-columns:56px 1fr;gap:12px;padding:11px 0}
+      :host(.tab) .bar{height:22px} :host(.tab) .star{font-size:21px;top:-2px}
       :host(.tab) button{font-size:18px;min-height:52px;min-width:56px;padding:10px 14px;border-radius:14px}
       :host(.tab) input{font-size:18px;padding:12px;min-height:52px} :host(.tab) .er .em{font-size:26px}
       :host(.tab) .er{grid-template-columns:70px 1fr 76px auto auto} :host(.tab) .er.new{grid-template-columns:70px 1fr 76px auto} :host(.tab) .eh{grid-template-columns:70px 1fr 76px 118px;font-size:13px}
-      :host(.tab) .dlg>div{font-size:20px} :host(.tab) .log{font-size:16px} :host(.tab) .err{font-size:14px} :host(.tab) .err button{font-size:14px;min-height:0;padding:6px 12px}
+      :host(.tab) .dlg>div{font-size:20px} :host(.tab) .log{font-size:clamp(12.5px,1.25vw,15px);line-height:1.45} :host(.tab) .err{font-size:14px} :host(.tab) .err button{font-size:14px;min-height:0;padding:6px 12px}
       `);
-      r.innerHTML+=`<ha-card class="np"><div class="hd" id="hd">${esc(this._c.title||t.nice_title)}<small>${t.nice_sub}</small></div><div class="bd" id="bd">
+      r.innerHTML+=`<ha-card class="np"><div class="hd" id="hd">${this._c.title?esc(this._c.title):t.nice_title}<small>${t.nice_sub}</small></div><div class="bd" id="bd">
         <div class="pm">${t.parent}</div>
-        <div class="why"><input id="why" maxlength="60" placeholder="${esc(t.why)}"></div>
+        <div class="why"><input id="why" maxlength="60" placeholder="${t.why}"></div>
         <div class="tools"><button class="ed" id="ed">${t.edit}</button><button id="rst">${t.reset}</button></div>
         <div class="edit" id="edit"></div>
         <div id="kids"></div>
@@ -808,9 +820,9 @@ class NordpolNice extends HTMLElement {
       $("kids").addEventListener("click",e=>{ const b=e.target.closest("button[data-d]"); if(!b) return; const row=b.closest(".kid");
         const k=this._kids().find(x=>x.uid===row.dataset.uid); if(!k) return; const why=$("why"); const d=+b.dataset.d; const w=(why.value||"").trim();
         const ns=clamp100(k.score+d); this._saveKid(k,{score:ns}); this._log(`${k.name} ${d>0?"+":""}${d}${w?": "+w:""}`); why.value=""; this._armTimer(); });
-      $("ed").addEventListener("click",()=>{ this._edit=!this._edit; $("edit").classList.toggle("on",this._edit); $("bd").classList.toggle("editing",this._edit); $("ed").textContent=this._edit?t.edit_done:t.edit; this._renderEdit(true); this._armTimer(); });
-      $("rst").addEventListener("click",()=>{ this._confirm(`<b>${t.reset_q}</b><br>${t.reset_txt}`, t.yes_reset, async ()=>{
-        for(const k of this._kids()) await this._saveKid(k,{score:k.start}); this._log(t.new_start, true); }); });
+      $("ed").addEventListener("click",()=>{ this._edit=!this._edit; $("edit").classList.toggle("on",this._edit); $("bd").classList.toggle("editing",this._edit); $("ed").textContent=this._edit?this._tr.edit_done:this._tr.edit; this._renderEdit(true); this._armTimer(); });
+      $("rst").addEventListener("click",()=>{ this._confirm(`<b>${t.reset_q}</b><br>${t.reset_txt}`, this._tr.yes_reset, async ()=>{
+        for(const k of this._kids()) await this._saveKid(k,{score:k.start}); this._log(this._tr.new_start, true); }); });
       $("no").addEventListener("click",()=>$("dlg").classList.remove("on"));
       $("yes").addEventListener("click",()=>{ $("dlg").classList.remove("on"); const f=this._onYes; this._onYes=null; f&&f(); this._armTimer(); });
       $("edit").addEventListener("click",e=>this._editClick(e));
@@ -832,17 +844,17 @@ class NordpolNice extends HTMLElement {
       </div></div>`; }).join("");
     this._renderEdit(!!this._pendingEdit); this._pendingEdit=false; this._renderLog();
   }
-  _openEdit(){ const r=this.shadowRoot, t=this._t; if(!this._parent) this._toggleParent(); this._edit=true;
-    r.getElementById("edit").classList.add("on"); r.getElementById("bd").classList.add("editing"); r.getElementById("ed").textContent=t.edit_done; this._renderEdit(true); this._armTimer();
+  _openEdit(){ const r=this.shadowRoot; if(!this._parent) this._toggleParent(); this._edit=true;
+    r.getElementById("edit").classList.add("on"); r.getElementById("bd").classList.add("editing"); r.getElementById("ed").textContent=this._tr.edit_done; this._renderEdit(true); this._armTimer();
     const n=r.querySelector(".er.new .nmI"); if(n) try{ n.focus(); }catch(e){} }
   _renderLog(){ const el=this.shadowRoot&&this.shadowRoot.getElementById("log"); if(!el) return; const L=this._logLines().slice(0,this._c.log_lines);
-    el.innerHTML=(L.length?L:[this._t.no_log]).map(l=>`✏️ ${esc(l)}`).join("<br>"); }
+    el.innerHTML=(L.length?L:[this._tr.no_log]).map(l=>`✏️ ${esc(l)}`).join("<br>"); }
   _renderEdit(force){ const el=this.shadowRoot.getElementById("edit"); if(!el||!this._edit) return;
     if(!force && el.contains(this.shadowRoot.activeElement)) return; const t=this._t;
     el.innerHTML=`<div class="eh"><span>${t.e_emoji}</span><span>${t.e_name}</span><span>${t.e_start}</span><span></span></div>`+
       this._kids().map(k=>`<div class="er" data-uid="${esc(k.uid)}"><input class="em" maxlength="120" value="${esc(k.emoji)}"><input class="nmI" maxlength="30" value="${esc(k.name)}">
         <input class="stI" type="number" min="0" max="100" step="5" value="${k.start}"><button class="sv">${t.save}</button><button class="dl">${t.del}</button></div>`).join("")+
-      `<div class="er new"><input class="em" maxlength="120" value="🧒"><input class="nmI" maxlength="30" placeholder="${esc(t.new_name)}">
+      `<div class="er new"><input class="em" maxlength="120" value="🧒"><input class="nmI" maxlength="30" placeholder="${t.new_name}">
         <input class="stI" type="number" min="0" max="100" step="5" value="${clamp100(this._c.default_start)}"><button class="ad">${t.add}</button></div>`; }
   _editClick(e){ const b=e.target.closest("button"); if(!b) return; const row=b.closest(".er"); const t=this._t; this._armTimer();
     const em=row.querySelector(".em").value.trim()||"🧒", nm=row.querySelector(".nmI").value.trim(), st=clamp100(row.querySelector(".stI").value);
@@ -852,11 +864,11 @@ class NordpolNice extends HTMLElement {
     const k=this._kids().find(x=>x.uid===row.dataset.uid); if(!k) return;
     if(b.classList.contains("sv")){ const d=Object.assign({},k.d,{emoji:em, start:st, score:k.score}); const data={item:k.uid, description:JSON.stringify(d)}; if(nm && nm!==k.name) data.rename=nm;
       this._svc("update_item",data); b.textContent="✔"; setTimeout(()=>this._renderEdit(true),600); }
-    if(b.classList.contains("dl")) this._confirm(`<b>${esc(F(t.del_q,{name:k.name}))}</b><br>${esc(F(t.del_txt,{name:k.name}))}`, t.yes_del, ()=>this._svc("remove_item",{item:[k.uid]}).then(()=>setTimeout(()=>this._renderEdit(true),300)));
+    if(b.classList.contains("dl")) this._confirm(`<b>${F(t.del_q,{name:esc(k.name)})}</b><br>${F(t.del_txt,{name:esc(k.name)})}`, this._tr.yes_del, ()=>this._svc("remove_item",{item:[k.uid]}).then(()=>setTimeout(()=>this._renderEdit(true),300)));
   }
   _confirm(html, yes, fn){ const r=this.shadowRoot; r.getElementById("dq").innerHTML=html; r.getElementById("yes").textContent=yes; this._onYes=fn; r.getElementById("dlg").classList.add("on"); this._armTimer(); }
   _closeParent(){ const r=this.shadowRoot; this._parent=false; this._edit=false; r.getElementById("bd").classList.remove("parent"); r.getElementById("dlg").classList.remove("on");
-    r.getElementById("edit").classList.remove("on"); r.getElementById("bd").classList.remove("editing"); r.getElementById("ed").textContent=this._t.edit; }
+    r.getElementById("edit").classList.remove("on"); r.getElementById("bd").classList.remove("editing"); r.getElementById("ed").textContent=this._tr.edit; }
   _armTimer(){ clearTimeout(this._pt); this._pt=setTimeout(()=>this._closeParent(),120000); }
   _toggleParent(){ if(this._parent){ this._closeParent(); return; } this._parent=true; this.shadowRoot.getElementById("bd").classList.add("parent"); this._armTimer(); if(navigator.vibrate) navigator.vibrate(40); }
 }
@@ -864,9 +876,9 @@ class NordpolNice extends HTMLElement {
 /* ---------- ELF OF THE DAY ---------- */
 class NordpolElf extends HTMLElement {
   static getStubConfig(){ return {}; }
-  setConfig(c){ this._t=T(c); this._c=Object.assign({title:this._t.elf_title, entity:null},c||{}); this._last=null; if(!this._c.entity) this._render(this._builtin()); }
+  setConfig(c){ this._t=T(c); this._tr=TRaw(c); this._c=Object.assign({title:this._tr.elf_title, entity:null},c||{}); this._last=null; if(!this._c.entity) this._render(this._builtin()); }
   _now(){ return nowInTz(this._c.time_zone||(this._hass&&this._hass.config&&this._hass.config.time_zone)); }
-  _list(){ const u=this._c&&this._c.elves; return (u&&u.length)?u.map(e=>Array.isArray(e)?e:[e.name,e.joke,e.task]):this._t.elves; }
+  _list(){ const u=this._c&&this._c.elves; return (u&&u.length)?u.map(e=>Array.isArray(e)?e:[e.name,e.joke,e.task]):this._tr.elves; }
   /* advent day = days until the celebration date counted back from 24 (24 on the day itself, so Dec 1 = 1 with the default date) */
   _adv(n){ const [mo,d]=dateMD(this._c); const t=new Date(eventYear(new Date(),this._c),mo,d); const today=new Date(n.getFullYear(),n.getMonth(),n.getDate());
     return 24-Math.round((t-today)/86400000); }
@@ -892,13 +904,13 @@ class NordpolElf extends HTMLElement {
       .task{margin-top:12px;padding:10px 12px;border-radius:10px;background:#1c7a45;color:#fff;font-weight:700;display:flex;gap:8px;align-items:center}
       .task.done{background:#b8860b}
       :host(.tab) .hd{display:none}
-      :host(.tab) .n{font-size:38px} :host(.tab) .elf{font-size:64px} :host(.tab) .j{font-size:20px}
-      :host(.tab) .task{font-size:19px;padding:16px;min-height:56px} :host(.tab) .ans{padding:6px 12px}
+      :host(.tab) .n{font-size:clamp(22px,2.3vw,32px);line-height:1.1;overflow-wrap:break-word} :host(.tab) .elf{font-size:clamp(44px,4.5vw,58px)} :host(.tab) .j{font-size:clamp(15px,1.55vw,19px);line-height:1.4}
+      :host(.tab) .task{font-size:clamp(14px,1.45vw,18px);padding:12px 14px;min-height:48px;line-height:1.35} :host(.tab) .ans{padding:5px 10px}
     `);
     const L=this._t; const [name,joke,task]=(s||this._builtin()).split("|");
     let q=joke||"", a=""; const k=q.indexOf("?"); if(k>0){a=q.slice(k+1).trim(); q=q.slice(0,k+1);}
     const n=this._now(); const adv=this._adv(n);
-    const dd=(adv>=1&&adv<=30)?(adv<=24&&dateMD(this._c)[0]===11&&dateMD(this._c)[1]===24?F(L.elf_date,{d:n.getDate()}):n.toLocaleDateString(L.locale,{day:"numeric",month:"long"})):L.elf_trial;
+    const dd=(adv>=1&&adv<=30)?(adv<=24&&dateMD(this._c)[0]===11&&dateMD(this._c)[1]===24?F(L.elf_date,{d:n.getDate()}):n.toLocaleDateString(this._tr.locale,{day:"numeric",month:"long"})):L.elf_trial;
     const key="nordpol-task-"+n.toDateString();
     const done=localStorage.getItem(key)==="1";
     r.innerHTML+=`<ha-card class="np"><div class="hd">${esc(this._c.title)}<small>${dd}</small></div><div class="bd"><div class="scroll">
@@ -935,14 +947,14 @@ function tzOffsetH(tz, y, mo=11, dd=24){ if(!tz) return null; try{ const d=new D
   return Math.round((Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute)-d)/900000)/4; }catch(e){ return null; } }
 class NordpolSleigh extends HTMLElement {
   static getStubConfig(){ return {eta:"23:59"}; }
-  setConfig(c){ this._c=Object.assign({eta:"23:59"}, c||{}); this._t=T(this._c); this._demo=false; this._route=null; this._build(); }
+  setConfig(c){ this._c=Object.assign({eta:"23:59"}, c||{}); this._t=T(this._c); this._tr=TRaw(this._c); this._demo=false; this._route=null; this._build(); }
   set hass(h){ const first=!this._hass; this._hass=h; if(first){ this._makeRoute(); this._drawBase(); this._tick(); } }
   getCardSize(){ return 6; }
   getGridOptions(){ return {columns:"full", rows:"auto"}; }
   _home(){ const c=this._c, hc=(this._hass&&this._hass.config)||{}; const h=typeof c.home==="object"&&c.home?c.home:{name:c.home};
     const y=eventYear(new Date(),c), [dmo,dday]=dateMD(c); const lat=+(h.lat??h.latitude??c.latitude??hc.latitude??51.5), lon=+(h.lon??h.longitude??c.longitude??hc.longitude??0);
     let off=h.utc_offset??c.utc_offset; if(off==null) off=tzOffsetH(h.tz||h.time_zone||c.time_zone||hc.time_zone, y, dmo, dday); if(off==null) off=-new Date(Date.UTC(y,dmo,dday)).getTimezoneOffset()/60;
-    return {name:h.name||hc.location_name||this._t.sl_home, lat, lon, off:+off}; }
+    return {name:h.name||hc.location_name||this._tr.sl_home, lat, lon, off:+off}; }
   _makeRoute(){ const H=this._home(), lg=langOf(this._c), t0=hm(this._c.eta||"23:59")-H.off*60; this._homeName=H.name; this._homeT=t0; this._homeOff=H.off;
     const extra=(this._c.extra_stops||[]).map(s=>[s.name,s.name,+s.lat,+s.lon,+s.utc_offset,s.local||"23:30"]);
     /* All stops are shifted by the same amount as your ETA (default 23:59), so Santa reaches every place at the same local clock time
@@ -956,7 +968,7 @@ class NordpolSleigh extends HTMLElement {
     for(let g=0; g<40; g++){ let rm=-1; for(let i=0;i<R.length-1;i++){ const a=R[i], b=R[i+1];
         if(gcd(a,b)/Math.max(b.t-a.t,1) > 6500/60){ rm = b.home ? i : (a.home ? i+1 : i); break; } }
       if(rm<0) break; R.splice(rm,1); }
-    const np=this._t.sl_np; R.unshift({name:np, lat:84, lon:179.5, t:R[0].t-45}); R.push({name:np, lat:84, lon:-170, t:R[R.length-1].t+90}); this._route=R; }
+    const np=this._tr.sl_np; R.unshift({name:np, lat:84, lon:179.5, t:R[0].t-45}); R.push({name:np, lat:84, lon:-170, t:R[R.length-1].t+90}); this._route=R; }
   _build(){
     const r=this.shadowRoot||this.attachShadow({mode:"open"}); r.innerHTML=""; const t=this._t;
     css(r, BASE_CSS+`
@@ -975,20 +987,20 @@ class NordpolSleigh extends HTMLElement {
       .demo{font-size:11px;opacity:.45;text-align:right;margin-top:6px}
       :host(.tab){display:block;height:100%}
       :host(.tab) .np{height:100%;display:flex;flex-direction:column;box-sizing:border-box}
-      :host(.tab) .hd{padding:10px 14px 4px;font-size:18px}
-      :host(.tab) .hd small{font-size:11px}
+      :host(.tab) .hd{padding:10px 14px 4px;font-size:clamp(15px,1.55vw,18px);gap:6px}
+      :host(.tab) .hd small{font-size:clamp(10px,.95vw,11px);text-align:right;white-space:nowrap}
       :host(.tab) .bd{flex:1;min-height:0;display:flex;flex-direction:column;padding:4px 14px 10px}
       :host(.tab) .map{flex:0 1 auto;width:100%;aspect-ratio:2.3/1;min-height:110px}
       :host(.tab) .st{gap:5px;margin-top:8px}
-      :host(.tab) .row{grid-template-columns:minmax(0,max-content) minmax(56px,1fr) auto;gap:8px;font-size:14px}
+      :host(.tab) .row{grid-template-columns:minmax(0,max-content) minmax(56px,1fr) auto;gap:8px;font-size:clamp(12px,1.2vw,14px)}
       :host(.tab) .row > span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
       :host(.tab) .pb{height:11px}
-      :host(.tab) .big{font-size:15px;margin-top:8px;padding:8px 12px;line-height:1.3}
-      :host(.tab) .eta{font-size:17px;padding:8px 12px;margin-top:8px}
+      :host(.tab) .big{font-size:clamp(13px,1.35vw,15px);margin-top:8px;padding:8px 12px;line-height:1.3}
+      :host(.tab) .eta{font-size:clamp(14px,1.45vw,17px);padding:8px 12px;margin-top:8px}
       :host(.tab) .news{font-size:12px;margin-top:6px}
       :host(.tab) .demo{margin-top:4px;font-size:10px}
     `);
-    r.innerHTML+=`<ha-card class="np"><div class="hd" id="hd">${esc(this._c.title||t.sl_title)}<small id="mode">${t.sl_radar}</small></div><div class="bd">
+    r.innerHTML+=`<ha-card class="np"><div class="hd" id="hd">${this._c.title?esc(this._c.title):t.sl_title}<small id="mode">${t.sl_radar}</small></div><div class="bd">
       <div class="map"><svg id="svg" viewBox="0 0 360 180" preserveAspectRatio="none"></svg></div><div id="info"></div>
       <div class="demo">${t.sl_hint}</div></div></ha-card>`;
     longPress(r.getElementById("hd"),900,()=>{ this._demo=!this._demo; this._demoStart=Date.now(); this._tick(); });
@@ -1015,7 +1027,7 @@ class NordpolSleigh extends HTMLElement {
     s+=`<g id="sl"><circle r="6" fill="rgba(255,60,74,.35)"><animate attributeName="r" values="3;8;3" dur="1.6s" repeatCount="indefinite"/></circle><text font-size="12" text-anchor="middle" dy="4">🛷</text></g>`;
     svg.innerHTML=s;
   }
-  _dlabel(){ const [mo,d]=dateMD(this._c); return new Date(2000,mo,d).toLocaleDateString(this._t.locale,{day:"numeric",month:"long"}); }
+  _dlabel(){ const [mo,d]=dateMD(this._c); return new Date(2000,mo,d).toLocaleDateString(this._tr.locale,{day:"numeric",month:"long"}); }
   _base(now){ const [mo,d]=dateMD(this._c); return Date.UTC(eventYear(now,this._c),mo,d); }   // celebration day 00:00 UTC (default 24/12)
   _pos(min){
     const R=this._route; if(min<=R[0].t) return {i:0,f:0,lat:R[0].lat,lon:R[0].lon,state:"pre"};
@@ -1033,7 +1045,7 @@ class NordpolSleigh extends HTMLElement {
     else if(real>=Math.min(-this._homeOff*60,R[0].t-120) && real<=R[R.length-1].t+30) min=real;
     const sr=this.shadowRoot, info=sr.getElementById("info"), mode=sr.getElementById("mode"), sl=sr.getElementById("sl"); if(!sl) return;
     if(min===undefined){
-      mode.textContent=t.sl_status;
+      mode.textContent=this._tr.sl_status;
       const end=xmasTarget(now,this._c), start=new Date(end.getTime()-53*86400000); let q=(now-start)/(end-start); q=Math.max(0.03,Math.min(0.995,q));
       const after = real>R[R.length-1].t+30 && real<R[R.length-1].t+30+7*1440;
       const V=[Math.round(20+79*q),Math.round(35+64*Math.min(1,q*1.2)),Math.round(50+49*q),Math.round(10+88*q*q),Math.round(5+94*q)];
@@ -1044,12 +1056,12 @@ class NordpolSleigh extends HTMLElement {
         <div class="big">${after?t.sl_after:`🛠️ ${news}`}</div>${after?"":`<div class="news">${F(t.sl_parked,{home:esc(this._homeName),eta:esc(this._c.eta),date:esc(this._dlabel())})}</div>`}`;
       return;
     }
-    const p=this._pos(min); mode.textContent=this._demo?t.sl_demo_mode:F(t.sl_live,{date:this._dlabel()});
+    const p=this._pos(min); mode.textContent=this._demo?this._tr.sl_demo_mode:F(this._tr.sl_live,{date:this._dlabel()});
     const [x,y]=this._xy(p.lat,p.lon); sl.setAttribute("transform",`translate(${x},${y})`);
     const done=R.slice(0,p.i+1).map(s=>[s.lat,s.lon]); if(p.state==="fly") done.push([p.lat,p.lon]);
     sr.getElementById("done").setAttribute("d", p.state==="pre"?"":this._path(done));
     const gifts = p.state==="pre"?0: Math.min(2400, Math.round(2400*Math.max(0,(min-R[1].t))/(R[R.length-2].t-R[1].t)));
-    const dep=new Date(this._base(now)+R[0].t*60000).toLocaleTimeString(t.locale,{hour:"2-digit",minute:"2-digit"});
+    const dep=new Date(this._base(now)+R[0].t*60000).toLocaleTimeString(this._tr.locale,{hour:"2-digit",minute:"2-digit"});
     const toHome=this._homeT-min; let where;
     if(p.state==="pre") where=F(t.sl_pre,{t:dep});
     else if(p.state==="done") where=t.sl_done;
@@ -1057,8 +1069,8 @@ class NordpolSleigh extends HTMLElement {
     else where = p.f<0.15 ? F(t.sl_land,{a:esc(R[p.i].name)}) : F(t.sl_fly,{a:esc(R[p.i].name),b:esc(R[p.i+1].name)});
     let eta; if(toHome>60) eta=F(t.sl_in_h,{h:Math.floor(toHome/60),m:Math.floor(toHome%60)}); else if(toHome>5) eta=F(t.sl_in_m,{m:Math.ceil(toHome)});
     else if(toHome>-20) eta=t.sl_now; else eta=t.sl_been;
-    const speed = p.state==="fly" ? (8000+Math.round(Math.abs(Math.sin(min))*4000)).toLocaleString(t.locale) : "0";
-    info.innerHTML=`<div class="big">${where}<br><span style="font-weight:500;font-size:14px">${F(t.sl_gifts,{n:gifts.toLocaleString(t.locale)})} · ${F(t.sl_speed,{s:speed})} · ${t.sl_rudolf}</span></div>
+    const speed = p.state==="fly" ? (8000+Math.round(Math.abs(Math.sin(min))*4000)).toLocaleString(this._tr.locale) : "0";
+    info.innerHTML=`<div class="big">${where}<br><span style="font-weight:500;font-size:.9em">${F(t.sl_gifts,{n:gifts.toLocaleString(this._tr.locale)})} · ${F(t.sl_speed,{s:speed})} · ${t.sl_rudolf}</span></div>
       <div class="eta"><span>${F(t.sl_eta,{home:esc(this._homeName)})}</span><span>${eta}</span></div>`;
   }
   connectedCallback(){ this._iv=setInterval(()=>this._tick(),1000); this._fast=setInterval(()=>{ if(this._demo) this._tick(); },200); this._tick(); }
@@ -1077,7 +1089,7 @@ class NordpolBoard extends HTMLElement {
   _checkVersion(){ const need=this._c.min_version; if(!need) return; const cmp=(a,b)=>{ const x=String(a).split(".").map(Number), y=String(b).split(".").map(Number);
       for(let i=0;i<3;i++){ const d=(x[i]||0)-(y[i]||0); if(d) return d; } return 0; };
     if(cmp(VER,need)>=0) return; const key="nordpol-reload-"+need; let n=0; try{ n=+sessionStorage.getItem(key)||0; }catch(e){}
-    const r=this.shadowRoot; const bn=document.createElement("div"); bn.textContent=T(this._c).stale+` (v${VER} → v${need})`;
+    const r=this.shadowRoot; const bn=document.createElement("div"); bn.textContent=TRaw(this._c).stale+` (v${VER} → v${need})`;
     bn.style.cssText="position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:50;background:#b3121f;color:#fff;font:700 16px system-ui;padding:10px 18px;border-radius:12px;border:2px solid #ffd878;cursor:pointer";
     bn.addEventListener("click",()=>location.reload()); r.appendChild(bn);
     if(n<2){ try{ sessionStorage.setItem(key,String(n+1)); }catch(e){} setTimeout(()=>location.reload(),4000); } }
@@ -1091,19 +1103,19 @@ class NordpolBoard extends HTMLElement {
       grid-template-columns:minmax(0,1.6fr) minmax(330px,1fr);grid-template-rows:auto minmax(0,1fr);
       grid-template-areas:"hero side" "cams side";
       height:calc(100dvh - var(--header-height,56px) - env(safe-area-inset-top,0px));min-height:560px}
-    .hero{grid-area:hero}.cams{grid-area:cams;min-height:0}
-    .side{grid-area:side;min-height:0;display:flex;flex-direction:column;gap:8px}
+    .hero{grid-area:hero;min-width:0}.cams{grid-area:cams;min-height:0;min-width:0}
+    .side{grid-area:side;min-height:0;min-width:0;display:flex;flex-direction:column;gap:8px}
     .tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:6px}
-    .tabs button{font:800 16px system-ui,sans-serif;min-height:48px;border-radius:14px;cursor:pointer;color:#fff8e7;
+    .tabs button{font:800 clamp(12px,1.3vw,16px) system-ui,sans-serif;min-height:46px;border-radius:14px;cursor:pointer;color:#fff8e7;
       border:1.5px solid rgba(255,214,120,.5);background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.03));
-      box-shadow:0 4px 12px rgba(0,0,0,.35);-webkit-tap-highlight-color:transparent;padding:4px 4px 6px}
+      box-shadow:0 4px 12px rgba(0,0,0,.35);-webkit-tap-highlight-color:transparent;padding:4px 4px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .tabs button.on{background:linear-gradient(180deg,#d6202f,#8d0f19);border-color:#ffd878;box-shadow:0 0 16px rgba(214,32,47,.6)}
-    .tabs button span{display:block;font-size:20px;line-height:1}
+    .tabs button span{display:block;font-size:clamp(17px,1.8vw,20px);line-height:1}
     .pane{flex:1;min-height:0;overflow:auto;border-radius:22px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
     .pane::-webkit-scrollbar{display:none}
     .pane > *{display:none}.pane > .show{display:block;height:100%}
     @media (orientation: portrait), (max-width: 860px){
-      .board{grid-template-columns:1fr;grid-template-rows:auto auto auto;grid-template-areas:"hero" "cams" "side";height:auto;min-height:0}
+      .board{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto;grid-template-areas:"hero" "cams" "side";height:auto;min-height:0}
       .cams{height:min(calc(56vw + 110px),720px)}
       .pane{overflow:visible}
     }`);
