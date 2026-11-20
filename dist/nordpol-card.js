@@ -1,7 +1,7 @@
 /* Nordpol Card – a Christmas dashboard for Home Assistant (countdown, elf cams, nice list, elf of the day, sleigh tracker).
    https://github.com/DKAnord/nordpol-card · MIT License · self-contained, no external assets. */
 (() => {
-const VER = "2.4.3";
+const VER = "2.4.4";
 const REPO_URL = "https://github.com/DKAnord/nordpol-card";
 /* === Camera periods (override in card config: periods / file_dir). Each period starts at "from" (local time). === */
 const CAM_PERIODS = [
@@ -50,7 +50,7 @@ const I18N = {
   del_q:"Slet {name}?", del_txt:"{name} fjernes fra artig-listen. Det kan ikke fortrydes.", yes_del:"Ja, slet", new_name:"Nyt barn",
   no_kids:"Ingen børn på listen endnu.", add_kid:"➕ Tilføj barn", loading:"Henter børnene fra julemandens notesbog…",
   load_err:"Kunne ikke hente børnene fra {store}: {err}", no_entity:"findes ikke i Home Assistant", retry:"🔄 Prøv igen",
-  stale:"🔄 Ny version af Nordpolen – genindlæser siden…", no_store:"Sæt <b>store:</b> til en dedikeret to-do-liste (eller opret <code>todo.nordpol_nice_list</code>) – se README.",
+  stale:"🔄 Ny version af Nordpolen – genindlæser siden…", no_store:"Opret en <b>Local To-do</b>-liste kaldet <code>Nordpol nice list</code>, eller vælg en to-do-liste i kortets visuelle editor.",
   elf_title:"🧝 Dagens nisse", elf_date:"{d}. december", elf_trial:"Prøve-nisse (rigtig nisse fra 1. december)", elf_duty:"vagthavende nisse i dag",
   elf_joke:"Dagens nissevittighed:", elf_tap:"(tryk for svar)", elf_task:"Dagens nisse-opgave:",
   elves:[["Nissen Pip", "Hvad siger en nisse, når han tæller? En, to, tre … nisse!", "Tegn en julestjerne"],
@@ -115,7 +115,7 @@ const I18N = {
   del_q:"Delete {name}?", del_txt:"{name} will be removed from the nice list. This cannot be undone.", yes_del:"Yes, delete", new_name:"New child",
   no_kids:"No children on the list yet.", add_kid:"➕ Add child", loading:"Fetching the children from Santa's notebook…",
   load_err:"Could not load the children from {store}: {err}", no_entity:"does not exist in Home Assistant", retry:"🔄 Try again",
-  stale:"🔄 New Nordpol version – reloading the page…", no_store:"Set <b>store:</b> to a dedicated to-do list (or create <code>todo.nordpol_nice_list</code>) – see README.",
+  stale:"🔄 New Nordpol version – reloading the page…", no_store:"Create a <b>Local To-do</b> list named <code>Nordpol nice list</code>, or pick a to-do list in the card’s visual editor.",
   elf_title:"🧝 Elf of the day", elf_date:"December {d}", elf_trial:"Trial elf (the real elf arrives December 1st)", elf_duty:"elf on duty today",
   elf_joke:"Elf joke of the day:", elf_tap:"(tap for the answer)", elf_task:"Elf task of the day:",
   elves:[["Elf Pip", "What do elves learn in school? The elf-abet!", "Draw a Christmas star"],
@@ -180,7 +180,7 @@ const I18N = {
   del_q:"Supprimer {name} ?", del_txt:"{name} sera retiré(e) de la liste. Cette action est irréversible.", yes_del:"Oui, supprimer", new_name:"Nouvel enfant",
   no_kids:"Aucun enfant sur la liste pour l’instant.", add_kid:"➕ Ajouter un enfant", loading:"Lecture du carnet du Père Noël…",
   load_err:"Impossible de charger les enfants depuis {store} : {err}", no_entity:"n’existe pas dans Home Assistant", retry:"🔄 Réessayer",
-  stale:"🔄 Nouvelle version de Nordpol – rechargement…", no_store:"Configurez <b>store:</b> avec une liste de tâches dédiée (ou créez <code>todo.nordpol_nice_list</code>) – voir le README.",
+  stale:"🔄 Nouvelle version de Nordpol – rechargement…", no_store:"Créez une liste <b>Local To-do</b> nommée <code>Nordpol nice list</code>, ou sélectionnez une liste dans l’éditeur visuel de la carte.",
   elf_title:"🧝 Le lutin du jour", elf_date:"{d} décembre", elf_trial:"Lutin d’essai (le vrai lutin arrive le 1er décembre)", elf_duty:"lutin de garde aujourd’hui",
   elf_joke:"La blague du lutin du jour :", elf_tap:"(toucher pour la réponse)", elf_task:"Mission du lutin du jour :",
   elves:[["Lutin Pipou", "Que dit un lutin quand il compte ? Un, deux, trois… lutin !", "Dessine une étoile de Noël"],
@@ -245,7 +245,7 @@ const I18N = {
   del_q:"{name} löschen?", del_txt:"{name} wird von der Artig-Liste entfernt. Dies kann nicht rückgängig gemacht werden.", yes_del:"Ja, löschen", new_name:"Neues Kind",
   no_kids:"Noch keine Kinder auf der Liste.", add_kid:"➕ Kind hinzufügen", loading:"Lade Kinder aus dem Notizbuch des Weihnachtsmanns…",
   load_err:"Kinder konnten nicht aus {store} geladen werden: {err}", no_entity:"existiert nicht in Home Assistant", retry:"🔄 Erneut versuchen",
-  stale:"🔄 Neue Nordpol-Version – Seite wird neu geladen…", no_store:"Setze <b>store:</b> auf eine eigene To-do-Liste (oder erstelle <code>todo.nordpol_nice_list</code>) – siehe README.",
+  stale:"🔄 Neue Nordpol-Version – Seite wird neu geladen…", no_store:"Erstelle eine <b>Local To-do</b>-Liste namens <code>Nordpol nice list</code> oder wähle eine Liste im visuellen Karten-Editor.",
   elf_title:"🧝 Wichtel des Tages", elf_date:"{d}. Dezember", elf_trial:"Probe-Wichtel (der echte Wichtel kommt am 1. Dezember)", elf_duty:"heute diensthabender Wichtel",
   elf_joke:"Wichtelwitz des Tages:", elf_tap:"(für die Antwort tippen)", elf_task:"Wichtelaufgabe des Tages:",
   elves:[["Wichtel Pieps", "Was sagen Wichtel beim Zählen? Eins, zwei, drei… wichtelig!", "Male einen Weihnachtsstern"],
@@ -310,7 +310,7 @@ const I18N = {
   del_q:"¿Eliminar a {name}?", del_txt:"Se eliminará a {name} de la lista. Esta acción no se puede deshacer.", yes_del:"Sí, eliminar", new_name:"Nuevo niño",
   no_kids:"Aún no hay niños en la lista.", add_kid:"➕ Añadir niño", loading:"Cargando los niños del cuaderno de Papá Noel…",
   load_err:"No se pudieron cargar los niños desde {store}: {err}", no_entity:"no existe en Home Assistant", retry:"🔄 Reintentar",
-  stale:"🔄 Nueva versión de Nordpol – recargando…", no_store:"Configura <b>store:</b> con una lista de tareas dedicada (o crea <code>todo.nordpol_nice_list</code>) – ver README.",
+  stale:"🔄 Nueva versión de Nordpol – recargando…", no_store:"Crea una lista <b>Local To-do</b> llamada <code>Nordpol nice list</code> o elige una lista en el editor visual de la tarjeta.",
   elf_title:"🧝 El elfo del día", elf_date:"{d} de diciembre", elf_trial:"Elfo de prueba (el elfo real llega el 1 de diciembre)", elf_duty:"elfo de guardia hoy",
   elf_joke:"El chiste del elfo del día:", elf_tap:"(toca para ver la respuesta)", elf_task:"Misión del elfo del día:",
   elves:[["Elfo Pipo", "¿Qué dice un elfo cuando cuenta? ¡Uno, dos, tres… elfo!", "Dibuja una estrella de Navidad"],
@@ -584,8 +584,9 @@ class NordpolHero extends HTMLElement {
 }
 
 /* ---------- SURVEILLANCE CAM WALL ---------- */
+const DEFAULT_CAMS = [{label:"CAM 01 – REINDEER PADDOCK"},{label:"CAM 02 – TOY WORKSHOP"},{label:"CAM 03 – MAILROOM"},{label:"CAM 04 – BAKERY"}];
 class NordpolCams extends HTMLElement {
-  static getStubConfig(){ return {cams:[{label:"CAM 01 – REINDEER PADDOCK"},{label:"CAM 02 – TOY WORKSHOP"},{label:"CAM 03 – MAILROOM"},{label:"CAM 04 – BAKERY"}]}; }
+  static getStubConfig(){ return {cams:DEFAULT_CAMS.map(x=>Object.assign({},x))}; }
   static getConfigForm(){
     return {
       schema:[
@@ -609,7 +610,7 @@ class NordpolCams extends HTMLElement {
       computeHelper: mkHelper()
     };
   }
-  setConfig(c){ this._t=T(c); this._tr=TRaw(c); this._c = Object.assign({title:this._tr.cam_title, cams:[], lost_label:this._tr.cam_lost_label, glitch:true}, c||{}); this._blob={}; this._build(); }
+  setConfig(c){ this._t=T(c); this._tr=TRaw(c); this._c = Object.assign({title:this._tr.cam_title, cams:DEFAULT_CAMS, lost_label:this._tr.cam_lost_label, glitch:true}, c||{}); this._blob={}; this._build(); }
   set hass(h){ const first=!this._hass; this._hass=h; if(first){ this._clock(); this._update(true); } }
   getCardSize(){ return 6; }
   getGridOptions(){ return {columns:"full", rows:"auto"}; }
@@ -693,7 +694,7 @@ class NordpolCams extends HTMLElement {
   _fileUrl(i,per){ const c=this._c.cams[i]; const dir=(this._c.file_dir||CAM_FILE_DIR).replace(/\/$/,"");
     const base=c.file||`${dir}/cam${i+1}`; return `${base}_${per}.mp4?v=${VER}`; }
   async _probe(url){ const e=this._exists[url]; if(e && Date.now()-e.t < CAM_RECHECK_MIN*60000) return e.ok;
-    let ok=false; try{ const r=await fetch(url,{method:"HEAD",cache:"no-store"}); ok=r.ok && !/text\/html/.test(r.headers.get("content-type")||""); }catch(err){ ok=false; }
+    let ok=false; try{ const r=await fetch(url,{method:"HEAD",cache:"no-store"}); ok=r.ok && /^video\//i.test(r.headers.get("content-type")||""); }catch(err){ ok=false; }
     this._exists[url]={ok,t:Date.now()}; return ok; }
   _setSrc(i,src,kind,url){ const v=this._vids[i]; if(!v||!src||v.dataset.src===src) return;
     v.dataset.src=src; v.dataset.kind=kind; v.dataset.url=url||""; v.src=src; const p=v.play&&v.play(); p&&p.catch&&p.catch(()=>{});
