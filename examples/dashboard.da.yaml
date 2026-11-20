@@ -15,7 +15,7 @@ views:
             - label: "CAM 03 – POSTRUM"
             - label: "CAM 04 – BAGERI"
         sleigh: { eta: "23:59" }
-        nice: {}                     # finder selv din Local To-do liste og gemmer nisseloggen deri
-          # store: todo.nordpol_artig_listen
+        nice:
+          store: todo.nordpol_nice_list           # dedikeret Local To-do liste (gemmer også nisseloggen)
           # log_entity: input_text.nordpol_nisselog
         elf: {}

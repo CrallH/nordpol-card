@@ -29,8 +29,8 @@ views:
         sleigh:
           eta: "23:59"               # local time Santa reaches you (uses your HA location/time zone by default)
           # home: { name: Springfield, lat: 39.78, lon: -89.65, tz: America/Chicago }
-        nice: {}                     # auto-detects your Local To-do list & stores the Elf Log inside it!
-          # store: todo.nordpol_nice_list           # only needed if you have multiple to-do lists
+        nice:
+          store: todo.nordpol_nice_list           # dedicated Local To-do list (also holds the Elf Log)
           # log_entity: input_text.nordpol_elf_log  # optional – from helpers/nordpol_package.yaml
           # default_start: 75
         elf: {}                      # 30 built-in elves; or elf: { elves: [{name: Elf Joe, joke: "Question? Answer", task: "Do something kind"}] }

@@ -1,7 +1,7 @@
 /* Nordpol Card – a Christmas dashboard for Home Assistant (countdown, elf cams, nice list, elf of the day, sleigh tracker).
    https://github.com/DKAnord/nordpol-card · MIT License · self-contained, no external assets. */
 (() => {
-const VER = "2.3.1";
+const VER = "2.3.2";
 const REPO_URL = "https://github.com/DKAnord/nordpol-card"; // TODO: set before publishing
 /* === Camera periods (override in card config: periods / file_dir). Each period starts at "from" (local time). === */
 const CAM_PERIODS = [
@@ -50,7 +50,7 @@ const I18N = {
   del_q:"Slet {name}?", del_txt:"{name} fjernes fra artig-listen. Det kan ikke fortrydes.", yes_del:"Ja, slet", new_name:"Nyt barn",
   no_kids:"Ingen børn på listen endnu.", add_kid:"➕ Tilføj barn", loading:"Henter børnene fra julemandens notesbog…",
   load_err:"Kunne ikke hente børnene fra {store}: {err}", no_entity:"findes ikke i Home Assistant", retry:"🔄 Prøv igen",
-  stale:"🔄 Ny version af Nordpolen – genindlæser siden…", no_store:"Sæt <b>store:</b> til en to-do-liste (fx <code>todo.artig_listen</code>) – se README.",
+  stale:"🔄 Ny version af Nordpolen – genindlæser siden…", no_store:"Sæt <b>store:</b> til en dedikeret to-do-liste (eller opret <code>todo.nordpol_nice_list</code>) – se README.",
   elf_title:"🧝 Dagens nisse", elf_date:"{d}. december", elf_trial:"Prøve-nisse (rigtig nisse fra 1. december)", elf_duty:"vagthavende nisse i dag",
   elf_joke:"Dagens nissevittighed:", elf_tap:"(tryk for svar)", elf_task:"Dagens nisse-opgave:",
   elves:[["Nissen Pip", "Hvad siger en nisse, når han tæller? En, to, tre … nisse!", "Tegn en julestjerne"],
@@ -115,7 +115,7 @@ const I18N = {
   del_q:"Delete {name}?", del_txt:"{name} will be removed from the nice list. This cannot be undone.", yes_del:"Yes, delete", new_name:"New child",
   no_kids:"No children on the list yet.", add_kid:"➕ Add child", loading:"Fetching the children from Santa's notebook…",
   load_err:"Could not load the children from {store}: {err}", no_entity:"does not exist in Home Assistant", retry:"🔄 Try again",
-  stale:"🔄 New Nordpol version – reloading the page…", no_store:"Set <b>store:</b> to a to-do list (e.g. <code>todo.nice_list</code>) – see README.",
+  stale:"🔄 New Nordpol version – reloading the page…", no_store:"Set <b>store:</b> to a dedicated to-do list (or create <code>todo.nordpol_nice_list</code>) – see README.",
   elf_title:"🧝 Elf of the day", elf_date:"December {d}", elf_trial:"Trial elf (the real elf arrives December 1st)", elf_duty:"elf on duty today",
   elf_joke:"Elf joke of the day:", elf_tap:"(tap for the answer)", elf_task:"Elf task of the day:",
   elves:[["Elf Pip", "What do elves learn in school? The elf-abet!", "Draw a Christmas star"],
@@ -165,7 +165,18 @@ const I18N = {
  }
 };
 function langOf(c){ const l=String((c&&c.language)||document.documentElement.lang||navigator.language||"en").toLowerCase(); return l.startsWith("da")?"da":"en"; }
-function T(c){ const L=I18N[langOf(c)]; return c&&c.strings?Object.assign({},L,c.strings):L; }
+function escVal(v){
+  if(Array.isArray(v)) return v.map(escVal);
+  if(v && typeof v==="object"){ const o={}; for(const k of Object.keys(v)) o[k]=escVal(v[k]); return o; }
+  return esc(v);
+}
+function T(c){
+  const L=I18N[langOf(c)];
+  if(!c||!c.strings||typeof c.strings!=="object") return L;
+  const o=Object.assign({},L);
+  for(const k of Object.keys(c.strings)) if(k!=="__proto__"&&k!=="constructor"&&k!=="prototype") o[k]=escVal(c.strings[k]);
+  return o;
+}
 function F(s,o){ return String(s).replace(/\{(\w+)\}/g,(_,k)=>o&&o[k]!=null?o[k]:""); }
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 
@@ -463,10 +474,7 @@ class NordpolNice extends HTMLElement {
     this._parent=false; this._built=false; this._edit=false; if(this._hass) this._render(); }
   _store(){
     if(this._c.store) return this._c.store;
-    if(this._autoStore) return this._autoStore;
-    const ks=this._hass?Object.keys(this._hass.states).filter(k=>k.startsWith("todo.")).sort():[];
-    const match=ks.find(k=>/nordpol|nice|artig|santa|jule/i.test(k))||(ks.length===1?ks[0]:null);
-    return (this._autoStore=match||null);
+    return this._hass && this._hass.states["todo.nordpol_nice_list"] ? "todo.nordpol_nice_list" : null;
   }
   set hass(h){ const old=this._hass; this._hass=h; this._sub();
     if(!old) this._render(); else if(this._c.log_entity && old.states[this._c.log_entity]!==h.states[this._c.log_entity]) this._renderLog(); }

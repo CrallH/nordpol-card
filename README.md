@@ -38,13 +38,14 @@ Create a new dashboard view with **View type: Panel** (so the tablet layout fill
 ```yaml
 type: custom:nordpol-board-card   # best inside a Panel view
 language: en                      # en | da
-nice: {}                          # auto-detects your Local To-do list
+nice:
+  store: todo.nordpol_nice_list   # dedicated Local To-do list (or pick in the visual editor)
 elf: {}
 sleigh: { eta: "23:59" }
 ```
 
-### 3. Enable the Nice list (1 click)
-Create a **Local To-do** list (e.g. `Nordpol nice list`) — the card **auto-detects** it automatically, and all 12 North Pole cam videos + your HA location/time zone work out of the box:
+### 3. Enable the Nice list
+Create a dedicated **Local To-do** list (e.g. `Nordpol nice list` → `todo.nordpol_nice_list`), then select it in the visual editor or set `nice.store` in YAML (if named `todo.nordpol_nice_list`, it is picked up automatically). All 12 North Pole cam videos and your HA location/time zone work out of the box:
 
 [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=local_todo)
 
@@ -84,7 +85,7 @@ Create a **Local To-do** list (e.g. `Nordpol nice list`) — the card **auto-det
 | `sleigh.eta` | `23:59` | local time Santa reaches *you* on Dec 24; all other stops shift with it |
 | `sleigh.home` | HA location + time zone | `{name, lat, lon, tz}` override |
 | `sleigh.extra_stops` / `sleigh.skip_stops` | – | add `{name, lat, lon, utc_offset, local}` or hide named stops |
-| `nice.store` / `nice.log_entity` / `nice.default_start` | auto-detected / – / `75` | to-do list backing the nice list (auto-detected if omitted; the Elf Log is stored inside the same list automatically if `log_entity` is omitted; the Emoji field also accepts image URLs like `/local/kids/emma.jpg`) |
+| `nice.store` / `nice.log_entity` / `nice.default_start` | `todo.nordpol_nice_list` (if present) / – / `75` | dedicated to-do list backing the nice list (set explicitly in YAML or the visual editor, or name the list `Nordpol nice list`; the Elf Log is stored inside the same list automatically if `log_entity` is omitted; the Emoji field also accepts image URLs like `/local/kids/emma.jpg`) |
 | `elf.elves` | 30 built-in | your own list: `[{name, joke, task}, …]`. Day 1…30 of the advent calendar picks entry 1…30 (Dec 1 = entry 1). Jokes are written as `question? answer` |
 | `elf.entity` | built-in | optional sensor whose state (`name\|joke\|task`) overrides the elf of the day |
 | `home_button` | none | `{label, icon, path}` extra tab that navigates to another dashboard |
